@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#101812">
     <title>Web Snake</title>
     <link rel="stylesheet" href="/styles.css">
+    <script src="/snake-logic.js" defer></script>
     <script src="/game-logic.js" defer></script>
     <script src="/game.js" defer></script>
   </head>
@@ -71,7 +72,7 @@
               <span><span class="live-dot"></span> CLASSIC SNAKE</span>
               <span id="game-status">READY WHEN YOU ARE</span>
             </div>
-            <canvas id="game-board" width="480" height="480" aria-label="Snake game board"></canvas>
+            <canvas id="game-board" width="480" height="480" aria-label="Snake game board" aria-describedby="movement-help"></canvas>
             <div id="board-overlay" class="board-overlay">
               <span class="overlay-icon" aria-hidden="true">↗</span>
               <h2 id="overlay-title">Your run starts here</h2>
@@ -96,9 +97,14 @@
             </div>
             <div class="controls-card">
               <span class="panel-label">HOW TO PLAY</span>
-              <p>Eat the glowing fruit to grow. Don’t hit the walls or your own tail.</p>
-              <div class="key-hint" aria-label="Arrow keys or W A S D">
-                <kbd>↑</kbd><span class="key-row"><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span>
+              <p id="movement-help">Use the keys, tap the arrows, or swipe the board to move. Don’t hit the walls or your own tail.</p>
+              <div class="key-hint" aria-label="Direction controls">
+                <button class="direction-button" type="button" data-direction="up" aria-label="Move up"><span aria-hidden="true">↑</span></button>
+                <span class="key-row">
+                  <button class="direction-button" type="button" data-direction="left" aria-label="Move left"><span aria-hidden="true">←</span></button>
+                  <button class="direction-button" type="button" data-direction="down" aria-label="Move down"><span aria-hidden="true">↓</span></button>
+                  <button class="direction-button" type="button" data-direction="right" aria-label="Move right"><span aria-hidden="true">→</span></button>
+                </span>
                 <span class="key-or">OR</span>
                 <span class="key-row"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span>
               </div>
