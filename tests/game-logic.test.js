@@ -60,3 +60,13 @@ test("leaderboard storage is parsed safely and invalid entries are ignored", () 
     { name: "Linus", score: "6" }
   ])), [{ name: "Ada", score: 4 }]);
 });
+
+test("loaded standings are normalized before selecting the top ten", () => {
+  const entries = Array.from({ length: 12 }, (_, score) => ({ name: `Player ${score}`, score }));
+  entries.push({ name: " player 0 ", score: 20 }, { name: "", score: 100 });
+
+  assert.deepEqual(parseLeaderboard(JSON.stringify(entries)), [
+    { name: "player 0", score: 20 },
+    ...entries.slice(3, 12).reverse()
+  ]);
+});

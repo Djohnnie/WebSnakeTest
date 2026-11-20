@@ -1,4 +1,6 @@
 (function exposeGameLogic(global) {
+  const leaderboardLimit = 10;
+
   function chooseFoodPosition(cells, snake, random = Math.random) {
     const occupied = new Set(snake.map((segment) => `${segment.x},${segment.y}`));
     const available = [];
@@ -38,13 +40,13 @@
   function parseLeaderboard(value) {
     if (!value) return [];
     try {
-      return normalizeLeaderboard(JSON.parse(value));
+      return normalizeLeaderboard(JSON.parse(value)).slice(0, leaderboardLimit);
     } catch {
       return [];
     }
   }
 
-  function recordLeaderboardScore(entries, name, score, limit = 10) {
+  function recordLeaderboardScore(entries, name, score, limit = leaderboardLimit) {
     const standings = normalizeLeaderboard(entries);
     const cleanName = String(name).trim();
     if (!cleanName || !Number.isInteger(score) || score < 0) return standings.slice(0, limit);
