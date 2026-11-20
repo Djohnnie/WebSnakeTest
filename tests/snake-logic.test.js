@@ -17,12 +17,16 @@ test("the snake moves one cell in the requested direction", () => {
 });
 
 test("the snake grows when it moves onto food", () => {
-  const snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }];
+  const snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3, y: 5 }];
   const result = moveSnake(snake, directions.right, { x: 6, y: 5 }, 20);
 
   assert.equal(result.ate, true);
-  assert.equal(result.snake.length, 3);
-  assert.deepEqual(result.snake[0], { x: 6, y: 5 });
+  assert.deepEqual(result.snake, [
+    { x: 6, y: 5 },
+    { x: 5, y: 5 },
+    { x: 4, y: 5 },
+    { x: 3, y: 5 }
+  ]);
 });
 
 test("walls and body collisions end movement", () => {
