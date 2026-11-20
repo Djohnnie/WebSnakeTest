@@ -21,7 +21,24 @@
   const cells = 20;
   const cellSize = canvas.width / cells;
   const storageKeys = { name: "websnake.playerName", score: "websnake.highScore" };
-  let playerName = localStorage.getItem(storageKeys.name) || "";
+  function readStoredValue(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  }
+
+  function storeValue(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      // Storage is optional; the current session can continue without persistence.
+    }
+  }
+
+  let playerName = readStoredValue(storageKeys.name) || "";
+  let highScore = Number(readStoredValue(storageKeys.score)) || 0;
   let snake;
   let food;
   let direction;
@@ -85,7 +102,7 @@
     gameScreen.hidden = false;
     gamePlayerName.textContent = playerName;
     playerDisplayName.textContent = playerName;
-    highScoreDisplay.textContent = String(Number(localStorage.getItem(storageKeys.score)) || 0).padStart(2, "0");
+    highScoreDisplay.textContent = String(highScore).padStart(2, "0");
     resetGame();
     requestAnimationFrame(drawBoard);
   }
@@ -124,9 +141,9 @@
     overlayCopy.textContent = `You collected ${score} ${score === 1 ? "fruit" : "fruits"}. Ready for another?`;
     startButton.innerHTML = 'PLAY AGAIN <span aria-hidden="true">→</span>';
     overlay.hidden = false;
-    const best = Math.max(score, Number(localStorage.getItem(storageKeys.score)) || 0);
-    localStorage.setItem(storageKeys.score, String(best));
-    highScoreDisplay.textContent = String(best).padStart(2, "0");
+    highScore = Math.max(score, highScore);
+    storeValue(storageKeys.score, String(highScore));
+    highScoreDisplay.textContent = String(highScore).padStart(2, "0");
   }
 
   function move() {
@@ -143,6 +160,11 @@
     if (eating) {
       score += 1;
       scoreDisplay.textContent = String(score).padStart(2, "0");
+      if (snake.length === cells * cells) {
+        finishGame();
+        drawBoard();
+        return;
+      }
       placeFood();
     } else {
       snake.pop();
@@ -160,7 +182,7 @@
       return;
     }
     playerName = chosenName;
-    localStorage.setItem(storageKeys.name, playerName);
+    storeValue(storageKeys.name, playerName);
     showGameScreen();
   });
   nameButton.addEventListener("click", showNameScreen);

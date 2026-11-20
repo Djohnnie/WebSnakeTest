@@ -77,8 +77,9 @@ h1 { margin: 25px 0 18px; font-size: clamp(46px, 5.2vw, 68px); line-height: .99;
 
 .game-screen { padding: 48px 6.7% 50px; }
 .game-heading { display: flex; align-items: end; justify-content: space-between; margin-bottom: 31px; }
+.game-heading > div { min-width: 0; flex: 1; }
 .game-heading .eyebrow { margin: 0; }
-.game-heading h1 { margin: 16px 0 0; font-size: clamp(34px, 4vw, 49px); }
+.game-heading h1 { min-width: 0; margin: 16px 0 0; overflow-wrap: anywhere; font-size: clamp(34px, 4vw, 49px); }
 .game-heading h1 span:first-child { color: var(--green); }
 .heading-dot { color: var(--green); }
 .change-name { border: 1px solid #3b4937; border-radius: 5px; padding: 11px 13px; background: #1b251d; color: #bac3b4; font-size: 9px; }
@@ -132,7 +133,7 @@ kbd { min-width: 22px; height: 21px; display: inline-grid; place-items: center; 
 @media (max-width: 420px) {
   .status-pill { font-size: 8px; }
   .game-heading { align-items: start; }
-  .game-heading h1 { max-width: 240px; overflow-wrap: anywhere; font-size: 35px; }
+  .game-heading h1 { max-width: 240px; font-size: 35px; }
   .change-name { padding: 9px; font-size: 8px; }
   .score-panel { gap: 8px; }
   .board-top { padding: 0 9px; font-size: 7px; }
