@@ -124,9 +124,7 @@
   }
 
   function placeFood() {
-    do {
-      food = { x: Math.floor(Math.random() * cells), y: Math.floor(Math.random() * cells) };
-    } while (snake.some((segment) => segment.x === food.x && segment.y === food.y));
+    food = WebSnakeGame.chooseFoodPosition(cells, snake);
   }
 
   function resetGame() {
