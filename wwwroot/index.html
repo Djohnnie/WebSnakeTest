@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#101812">
+    <title>Web Snake</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/game.js" defer></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Web Snake home">
+          <span class="brand-mark" aria-hidden="true">S</span>
+          <span>WEB<span class="brand-accent">SNAKE</span></span>
+        </a>
+        <span class="status-pill"><span class="status-dot"></span> ARCADE MODE</span>
+      </header>
+
+      <section id="name-screen" class="name-screen" aria-labelledby="welcome-title">
+        <div class="intro">
+          <p class="eyebrow"><span class="eyebrow-line"></span> YOUR GAME, YOUR NAME</p>
+          <h1 id="welcome-title">Ready to<br><span>play?</span></h1>
+          <p class="intro-copy">Every legend starts somewhere. Pick a name and make this run yours.</p>
+          <div class="game-facts" aria-label="Game information">
+            <div><span class="fact-icon" aria-hidden="true">⌁</span><span>CLASSIC SNAKE</span></div>
+            <div><span class="fact-icon" aria-hidden="true">↗</span><span>CHASE YOUR HIGH SCORE</span></div>
+          </div>
+        </div>
+
+        <form id="name-form" class="name-card">
+          <div class="card-topline"><span>PLAYER SETUP</span><span class="step-number">01 / 01</span></div>
+          <div class="avatar" aria-hidden="true">
+            <span class="avatar-snake"><i></i><i></i><i></i></span>
+            <span class="avatar-spark">✳</span>
+          </div>
+          <label for="player-name">What should we call you?</label>
+          <p class="field-hint">This is how you’ll appear in the game.</p>
+          <div class="input-wrap">
+            <span class="input-prefix" aria-hidden="true">@</span>
+            <input id="player-name" name="playerName" type="text" placeholder="Enter your name" maxlength="24" autocomplete="nickname" required autofocus>
+            <span id="character-count" class="character-count">0/24</span>
+          </div>
+          <p id="name-error" class="error-message" role="alert" hidden>Please enter a name to continue.</p>
+          <button class="primary-button" type="submit">LET’S PLAY <span aria-hidden="true">→</span></button>
+          <p class="privacy-note"><span aria-hidden="true">◈</span> Your name stays on this device.</p>
+        </form>
+
+        <div class="decorative-board" aria-hidden="true">
+          <span class="board-cell cell-a"></span><span class="board-cell cell-b"></span><span class="board-cell cell-c"></span>
+          <span class="board-cell cell-d"></span><span class="board-cell cell-e"></span><span class="board-cell cell-f"></span>
+          <span class="board-cell cell-g"></span><span class="board-cell cell-h"></span><span class="board-cell cell-i"></span>
+          <span class="board-cell cell-j"></span><span class="board-cell cell-k"></span><span class="board-cell cell-l"></span>
+          <span class="board-food"></span>
+        </div>
+      </section>
+
+      <section id="game-screen" class="game-screen" aria-labelledby="game-title" hidden>
+        <div class="game-heading">
+          <div>
+            <p class="eyebrow"><span class="eyebrow-line"></span> THE ARCADE IS YOURS</p>
+            <h1 id="game-title">Let’s go, <span id="game-player-name"></span><span class="heading-dot">.</span></h1>
+          </div>
+          <button id="change-name" class="change-name" type="button">CHANGE NAME <span aria-hidden="true">↗</span></button>
+        </div>
+        <div class="game-layout">
+          <div class="board-frame">
+            <div class="board-top">
+              <span><span class="live-dot"></span> CLASSIC SNAKE</span>
+              <span id="game-status">READY WHEN YOU ARE</span>
+            </div>
+            <canvas id="game-board" width="480" height="480" aria-label="Snake game board"></canvas>
+            <div id="board-overlay" class="board-overlay">
+              <span class="overlay-icon" aria-hidden="true">↗</span>
+              <h2 id="overlay-title">Your run starts here</h2>
+              <p id="overlay-copy">Use the arrow keys or WASD to guide your snake.</p>
+              <button id="start-game" class="primary-button" type="button">START GAME <span aria-hidden="true">→</span></button>
+            </div>
+          </div>
+          <aside class="score-panel">
+            <div class="player-panel">
+              <span class="panel-label">CURRENT PLAYER</span>
+              <div class="player-details"><span class="player-avatar" aria-hidden="true">S</span><span id="player-display-name"></span></div>
+            </div>
+            <div class="score-card">
+              <span class="panel-label">THIS RUN</span>
+              <strong id="current-score">00</strong>
+              <span class="score-caption">FOOD COLLECTED</span>
+            </div>
+            <div class="score-card high-score-card">
+              <span class="panel-label">PERSONAL BEST</span>
+              <strong id="high-score">00</strong>
+              <span class="score-caption">ALL-TIME SCORE</span>
+            </div>
+            <div class="controls-card">
+              <span class="panel-label">HOW TO PLAY</span>
+              <p>Eat the glowing fruit to grow. Don’t hit the walls or your own tail.</p>
+              <div class="key-hint" aria-label="Arrow keys or W A S D">
+                <kbd>↑</kbd><span class="key-row"><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span>
+                <span class="key-or">OR</span>
+                <span class="key-row"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+      <footer class="footer"><span>ONE MORE ROUND?</span><span>© WEB SNAKE ARCADE</span></footer>
+    </main>
+  </body>
+</html>
