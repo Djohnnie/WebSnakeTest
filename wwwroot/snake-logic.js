@@ -40,8 +40,7 @@
 
     if (collided) return { collided, ate: false, head, snake };
 
-    const nextSnake = [head, ...snake];
-    if (!ate) nextSnake.pop();
+    const nextSnake = [head, ...(ate ? snake : snake.slice(0, -1))];
     return { collided: false, ate, head, snake: nextSnake };
   }
 
