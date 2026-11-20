@@ -17,6 +17,8 @@
   const gameStatus = document.querySelector("#game-status");
   const scoreDisplay = document.querySelector("#current-score");
   const highScoreDisplay = document.querySelector("#high-score");
+  const directionButtons = document.querySelectorAll("[data-direction]");
+  const { directions, queueDirection, moveSnake } = window.SnakeLogic;
 
   const cells = 20;
   const cellSize = canvas.width / cells;
@@ -42,10 +44,11 @@
   let snake;
   let food;
   let direction;
-  let nextDirection;
+  let directionQueue = [];
   let score = 0;
   let timer;
   let running = false;
+  let pointerStart;
 
   function drawBoard() {
     context.fillStyle = "#141c16";
@@ -124,12 +127,12 @@
   function resetGame() {
     snake = [{ x: 9, y: 10 }, { x: 8, y: 10 }, { x: 7, y: 10 }];
     direction = { x: 1, y: 0 };
-    nextDirection = { x: 1, y: 0 };
+    directionQueue = [];
     score = 0;
     scoreDisplay.textContent = "00";
     gameStatus.textContent = "READY WHEN YOU ARE";
     overlayTitle.textContent = "Your run starts here";
-    overlayCopy.textContent = "Use the arrow keys or WASD to guide your snake.";
+    overlayCopy.textContent = "Use the arrows, WASD, or swipe the board to guide your snake.";
     startButton.innerHTML = 'START GAME <span aria-hidden="true">→</span>';
     overlay.hidden = false;
     placeFood();
@@ -151,17 +154,15 @@
   }
 
   function move() {
-    direction = nextDirection;
-    const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
-    const eating = head.x === food.x && head.y === food.y;
-    const body = eating ? snake : snake.slice(0, -1);
-    if (head.x < 0 || head.x >= cells || head.y < 0 || head.y >= cells || body.some((segment) => segment.x === head.x && segment.y === head.y)) {
+    if (directionQueue.length) direction = directionQueue.shift();
+    const result = moveSnake(snake, direction, food, cells);
+    if (result.collided) {
       finishGame();
       return;
     }
 
-    snake.unshift(head);
-    if (eating) {
+    snake = result.snake;
+    if (result.ate) {
       score += 1;
       scoreDisplay.textContent = String(score).padStart(2, "0");
       if (snake.length === cells * cells) {
@@ -170,10 +171,26 @@
         return;
       }
       placeFood();
-    } else {
-      snake.pop();
     }
     drawBoard();
+    canvas.setAttribute(
+      "aria-label",
+      `Snake game board. Head at column ${snake[0].x + 1}, row ${snake[0].y + 1}.`
+    );
+  }
+
+  function requestDirection(requested) {
+    if (!running) return;
+    queueDirection(directionQueue, direction, requested);
+  }
+
+  function directionFromPointer(pointerEnd) {
+    if (!pointerStart) return null;
+    const horizontal = pointerEnd.x - pointerStart.x;
+    const vertical = pointerEnd.y - pointerStart.y;
+    if (Math.max(Math.abs(horizontal), Math.abs(vertical)) < 20) return null;
+    if (Math.abs(horizontal) > Math.abs(vertical)) return horizontal > 0 ? directions.right : directions.left;
+    return vertical > 0 ? directions.down : directions.up;
   }
 
   nameInput.addEventListener("input", updateCount);
@@ -201,15 +218,31 @@
   document.addEventListener("keydown", (event) => {
     if (gameScreen.hidden || !running) return;
     const keys = {
-      ArrowUp: { x: 0, y: -1 }, w: { x: 0, y: -1 }, W: { x: 0, y: -1 },
-      ArrowDown: { x: 0, y: 1 }, s: { x: 0, y: 1 }, S: { x: 0, y: 1 },
-      ArrowLeft: { x: -1, y: 0 }, a: { x: -1, y: 0 }, A: { x: -1, y: 0 },
-      ArrowRight: { x: 1, y: 0 }, d: { x: 1, y: 0 }, D: { x: 1, y: 0 }
+      ArrowUp: directions.up, w: directions.up, W: directions.up,
+      ArrowDown: directions.down, s: directions.down, S: directions.down,
+      ArrowLeft: directions.left, a: directions.left, A: directions.left,
+      ArrowRight: directions.right, d: directions.right, D: directions.right
     };
     const requested = keys[event.key];
     if (!requested) return;
     event.preventDefault();
-    if (requested.x !== -direction.x || requested.y !== -direction.y) nextDirection = requested;
+    requestDirection(requested);
+  });
+  directionButtons.forEach((button) => {
+    button.addEventListener("click", () => requestDirection(directions[button.dataset.direction]));
+  });
+  canvas.addEventListener("pointerdown", (event) => {
+    if (!running || event.pointerType === "mouse") return;
+    pointerStart = { x: event.clientX, y: event.clientY };
+    canvas.setPointerCapture(event.pointerId);
+  });
+  canvas.addEventListener("pointerup", (event) => {
+    const requested = directionFromPointer({ x: event.clientX, y: event.clientY });
+    pointerStart = null;
+    if (requested) requestDirection(requested);
+  });
+  canvas.addEventListener("pointercancel", () => {
+    pointerStart = null;
   });
 
   drawBoard();
