@@ -18,11 +18,21 @@
   const scoreDisplay = document.querySelector("#current-score");
   const highScoreDisplay = document.querySelector("#high-score");
   const directionButtons = document.querySelectorAll("[data-direction]");
+  const leaderboardDialog = document.querySelector("#leaderboard-dialog");
+  const leaderboardList = document.querySelector("#leaderboard-list");
+  const leaderboardEmpty = document.querySelector("#leaderboard-empty");
+  const openLeaderboard = document.querySelector("#open-leaderboard");
+  const closeLeaderboard = document.querySelector("#close-leaderboard");
   const { directions, queueDirection, moveSnake } = window.SnakeLogic;
+  const { parseLeaderboard, recordLeaderboardScore } = window.WebSnakeGame;
 
   const cells = 20;
   const cellSize = canvas.width / cells;
-  const storageKeys = { name: "websnake.playerName", score: "websnake.highScore" };
+  const storageKeys = {
+    name: "websnake.playerName",
+    score: "websnake.highScore",
+    leaderboard: "websnake.leaderboard"
+  };
   function readStoredValue(key) {
     try {
       return localStorage.getItem(key);
@@ -41,6 +51,7 @@
 
   let playerName = readStoredValue(storageKeys.name) || "";
   let highScore = Number(readStoredValue(storageKeys.score)) || 0;
+  let leaderboard = parseLeaderboard(readStoredValue(storageKeys.leaderboard));
   let snake;
   let food;
   let direction;
@@ -123,6 +134,24 @@
     errorMessage.hidden = true;
   }
 
+  function renderLeaderboard() {
+    leaderboardList.replaceChildren();
+    leaderboardEmpty.hidden = leaderboard.length > 0;
+    leaderboard.forEach((entry, index) => {
+      const item = document.createElement("li");
+      const rank = document.createElement("span");
+      const name = document.createElement("span");
+      const points = document.createElement("strong");
+      rank.className = "leaderboard-rank";
+      rank.textContent = String(index + 1).padStart(2, "0");
+      name.className = "leaderboard-name";
+      name.textContent = entry.name;
+      points.textContent = `${entry.score} ${entry.score === 1 ? "PT" : "PTS"}`;
+      item.append(rank, name, points);
+      leaderboardList.append(item);
+    });
+  }
+
   function placeFood() {
     food = WebSnakeGame.chooseFoodPosition(cells, snake);
   }
@@ -154,6 +183,9 @@
     highScore = Math.max(score, highScore);
     storeValue(storageKeys.score, String(highScore));
     highScoreDisplay.textContent = String(highScore).padStart(2, "0");
+    leaderboard = recordLeaderboardScore(leaderboard, playerName, score);
+    storeValue(storageKeys.leaderboard, JSON.stringify(leaderboard));
+    renderLeaderboard();
   }
 
   function move() {
@@ -206,6 +238,14 @@
     showGameScreen();
   });
   nameButton.addEventListener("click", showNameScreen);
+  openLeaderboard.addEventListener("click", () => {
+    renderLeaderboard();
+    leaderboardDialog.showModal();
+  });
+  closeLeaderboard.addEventListener("click", () => leaderboardDialog.close());
+  leaderboardDialog.addEventListener("click", (event) => {
+    if (event.target === leaderboardDialog) leaderboardDialog.close();
+  });
   startButton.addEventListener("click", () => {
     if (running) return;
     resetGame();
@@ -249,6 +289,7 @@
     activePointerId = undefined;
   });
 
+  renderLeaderboard();
   drawBoard();
   if (playerName) showGameScreen();
 })();

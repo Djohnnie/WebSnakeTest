@@ -1,6 +1,10 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { chooseFoodPosition } = require("../wwwroot/game-logic.js");
+const {
+  chooseFoodPosition,
+  parseLeaderboard,
+  recordLeaderboardScore
+} = require("../wwwroot/game-logic.js");
 
 test("food is placed on a random grid cell", () => {
   const first = chooseFoodPosition(3, [{ x: 1, y: 1 }], () => 0);
@@ -31,4 +35,28 @@ test("no food is created when every cell is occupied", () => {
   }
 
   assert.equal(chooseFoodPosition(2, snake), null);
+});
+
+test("leaderboard scores are sorted and limited to each player's best", () => {
+  let standings = recordLeaderboardScore([], "Ada", 3);
+  standings = recordLeaderboardScore(standings, "Grace", 5);
+  standings = recordLeaderboardScore(standings, "Ada", 2);
+  standings = recordLeaderboardScore(standings, "ada", 7);
+  standings = recordLeaderboardScore(standings, "Linus", 4, 2);
+
+  assert.deepEqual(standings, [
+    { name: "ada", score: 7 },
+    { name: "Grace", score: 5 }
+  ]);
+});
+
+test("leaderboard storage is parsed safely and invalid entries are ignored", () => {
+  assert.deepEqual(parseLeaderboard(null), []);
+  assert.deepEqual(parseLeaderboard("{broken"), []);
+  assert.deepEqual(parseLeaderboard(JSON.stringify([
+    { name: "Ada", score: 4 },
+    { name: " ", score: 8 },
+    { name: "Grace", score: -1 },
+    { name: "Linus", score: "6" }
+  ])), [{ name: "Ada", score: 4 }]);
 });

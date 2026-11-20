@@ -30,12 +30,16 @@ button { cursor: pointer; }
 
 .app-shell { width: min(1120px, calc(100% - 64px)); margin: 0 auto; }
 .topbar { height: 84px; border-bottom: 1px solid rgba(226, 238, 216, .09); display: flex; align-items: center; justify-content: space-between; }
+.topbar-actions { display: flex; align-items: center; gap: 20px; }
 .brand { display: flex; align-items: center; gap: 11px; color: #f0f3eb; text-decoration: none; font-size: 15px; font-weight: 800; letter-spacing: .12em; }
 .brand-mark { width: 30px; height: 30px; display: grid; place-items: center; background: var(--accent); color: #15200e; border-radius: 9px 9px 9px 2px; font-size: 19px; font-weight: 800; font-style: italic; letter-spacing: 0; }
 .brand-accent { color: var(--accent); }
 .status-pill, .eyebrow, .card-topline, .game-facts, .privacy-note, .board-top, .change-name, .panel-label, .score-caption, .footer { font-family: var(--mono); letter-spacing: .08em; }
 .status-pill { display: flex; align-items: center; gap: 9px; color: #a4ae9e; font-size: 10px; }
 .status-dot, .live-dot { width: 7px; height: 7px; display: inline-block; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px rgba(242,138,178,.65); }
+.leaderboard-button { display: flex; align-items: center; gap: 8px; padding: 9px 11px; border: 1px solid #3b4937; border-radius: 5px; background: #1b251d; color: #bac3b4; font-family: var(--mono); font-size: 9px; letter-spacing: .06em; }
+.leaderboard-button span { color: var(--accent); font-size: 14px; }
+.leaderboard-button:hover, .leaderboard-button:focus-visible { border-color: var(--accent); color: #f0f3eb; outline: none; }
 
 .name-screen { position: relative; min-height: 632px; display: grid; grid-template-columns: 1fr 424px; align-items: center; gap: 92px; padding: 55px 6.7% 72px; overflow: hidden; }
 .intro, .name-card { position: relative; z-index: 1; }
@@ -113,10 +117,23 @@ h1 { margin: 25px 0 18px; font-size: clamp(46px, 5.2vw, 68px); line-height: .99;
 .direction-button:active { background: #33452a; }
 .key-or { margin: 4px 0 2px; color: #71806b; font-family: var(--mono); font-size: 7px; }
 .footer { min-height: 56px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(226, 238, 216, .09); color: #768170; font-size: 8px; }
+.leaderboard-dialog { width: min(440px, calc(100% - 36px)); padding: 25px; border: 1px solid #46583a; border-radius: 11px; background: #1a241c; color: #f0f3eb; box-shadow: 0 24px 70px rgba(0,0,0,.55); }
+.leaderboard-dialog::backdrop { background: rgba(6, 10, 7, .78); }
+.leaderboard-header { display: flex; align-items: start; justify-content: space-between; gap: 20px; }
+.leaderboard-header .eyebrow { margin: 0; }
+.leaderboard-header h2 { margin: 14px 0 22px; font-size: 30px; letter-spacing: -.04em; }
+.dialog-close { width: 32px; height: 32px; border: 1px solid #3b4937; border-radius: 5px; background: #202c20; color: #b9c3b2; font-size: 22px; line-height: 1; }
+.leaderboard-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.leaderboard-list li { display: grid; grid-template-columns: 36px 1fr auto; align-items: center; gap: 9px; padding: 13px; border: 1px solid #303d2d; border-radius: 6px; background: #141d16; }
+.leaderboard-rank { color: #7f8b78; font-family: var(--mono); font-size: 11px; }
+.leaderboard-name { overflow-wrap: anywhere; font-size: 14px; font-weight: 600; }
+.leaderboard-list strong { color: var(--accent); font-family: var(--mono); font-size: 12px; font-weight: 400; }
+.leaderboard-empty { margin: 0; padding: 28px 20px; border: 1px dashed #46583a; border-radius: 6px; color: #9da795; text-align: center; font-size: 13px; line-height: 1.6; }
 
 @media (max-width: 760px) {
   .app-shell { width: min(100% - 36px, 540px); }
   .topbar { height: 68px; }
+  .status-pill { display: none; }
   .name-screen { min-height: auto; grid-template-columns: 1fr; gap: 32px; padding: 54px 0 48px; }
   .intro h1 { margin-top: 20px; font-size: 54px; }
   .intro-copy { max-width: 390px; font-size: 14px; }
@@ -135,6 +152,7 @@ h1 { margin: 25px 0 18px; font-size: clamp(46px, 5.2vw, 68px); line-height: .99;
 
 @media (max-width: 420px) {
   .status-pill { font-size: 8px; }
+  .leaderboard-button { padding: 8px; font-size: 8px; }
   .game-heading { align-items: start; }
   .game-heading h1 { max-width: 240px; font-size: 35px; }
   .change-name { padding: 9px; font-size: 8px; }
