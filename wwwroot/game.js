@@ -104,7 +104,10 @@
     playerDisplayName.textContent = playerName;
     highScoreDisplay.textContent = String(highScore).padStart(2, "0");
     resetGame();
-    requestAnimationFrame(drawBoard);
+    requestAnimationFrame(() => {
+      drawBoard();
+      startButton.focus();
+    });
   }
 
   function updateCount() {
@@ -141,6 +144,7 @@
     overlayCopy.textContent = `You collected ${score} ${score === 1 ? "fruit" : "fruits"}. Ready for another?`;
     startButton.innerHTML = 'PLAY AGAIN <span aria-hidden="true">→</span>';
     overlay.hidden = false;
+    requestAnimationFrame(() => startButton.focus());
     highScore = Math.max(score, highScore);
     storeValue(storageKeys.score, String(highScore));
     highScoreDisplay.textContent = String(highScore).padStart(2, "0");
