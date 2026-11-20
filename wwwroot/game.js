@@ -49,6 +49,7 @@
   let timer;
   let running = false;
   let pointerStart;
+  let activePointerId;
 
   function drawBoard() {
     context.fillStyle = "#141c16";
@@ -66,6 +67,10 @@
     }
 
     if (!snake) return;
+    canvas.setAttribute(
+      "aria-label",
+      `Snake game board. Head at column ${snake[0].x + 1}, row ${snake[0].y + 1}.`
+    );
     context.fillStyle = "#ff7968";
     context.shadowColor = "#ff7968";
     context.shadowBlur = 14;
@@ -173,10 +178,6 @@
       placeFood();
     }
     drawBoard();
-    canvas.setAttribute(
-      "aria-label",
-      `Snake game board. Head at column ${snake[0].x + 1}, row ${snake[0].y + 1}.`
-    );
   }
 
   function requestDirection(requested) {
@@ -232,17 +233,22 @@
     button.addEventListener("click", () => requestDirection(directions[button.dataset.direction]));
   });
   canvas.addEventListener("pointerdown", (event) => {
-    if (!running || event.pointerType === "mouse") return;
+    if (!running || event.pointerType === "mouse" || activePointerId !== undefined) return;
+    activePointerId = event.pointerId;
     pointerStart = { x: event.clientX, y: event.clientY };
     canvas.setPointerCapture(event.pointerId);
   });
   canvas.addEventListener("pointerup", (event) => {
+    if (event.pointerId !== activePointerId) return;
     const requested = directionFromPointer({ x: event.clientX, y: event.clientY });
     pointerStart = null;
+    activePointerId = undefined;
     if (requested) requestDirection(requested);
   });
-  canvas.addEventListener("pointercancel", () => {
+  canvas.addEventListener("pointercancel", (event) => {
+    if (event.pointerId !== activePointerId) return;
     pointerStart = null;
+    activePointerId = undefined;
   });
 
   drawBoard();
