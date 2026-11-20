@@ -184,7 +184,8 @@
     highScore = Math.max(score, highScore);
     storeValue(storageKeys.score, String(highScore));
     highScoreDisplay.textContent = String(highScore).padStart(2, "0");
-    leaderboard = recordLeaderboardScore(leaderboard, playerName, score);
+    const storedLeaderboard = parseLeaderboard(readStoredValue(storageKeys.leaderboard));
+    leaderboard = recordLeaderboardScore([...leaderboard, ...storedLeaderboard], playerName, score);
     storeValue(storageKeys.leaderboard, JSON.stringify(leaderboard));
     renderLeaderboard();
   }
