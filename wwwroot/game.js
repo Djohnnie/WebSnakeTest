@@ -59,6 +59,7 @@
   let score = 0;
   let timer;
   let running = false;
+  let leaderboardPausedGame = false;
   let pointerStart;
   let activePointerId;
 
@@ -239,12 +240,25 @@
   });
   nameButton.addEventListener("click", showNameScreen);
   openLeaderboard.addEventListener("click", () => {
+    leaderboardPausedGame = running;
+    if (leaderboardPausedGame) {
+      running = false;
+      clearInterval(timer);
+      gameStatus.textContent = "PAUSED";
+    }
     renderLeaderboard();
     leaderboardDialog.showModal();
   });
   closeLeaderboard.addEventListener("click", () => leaderboardDialog.close());
   leaderboardDialog.addEventListener("click", (event) => {
     if (event.target === leaderboardDialog) leaderboardDialog.close();
+  });
+  leaderboardDialog.addEventListener("close", () => {
+    if (!leaderboardPausedGame) return;
+    leaderboardPausedGame = false;
+    running = true;
+    gameStatus.textContent = "IN PROGRESS";
+    timer = setInterval(move, 140);
   });
   startButton.addEventListener("click", () => {
     if (running) return;
