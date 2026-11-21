@@ -47,6 +47,11 @@
     return isSlowEffectActive(slowEffectUntil, now) ? normalDelay * 2 : normalDelay;
   }
 
+  function getRemainingMoveDelay(normalDelay, slowEffectUntil, now, lastMoveAt) {
+    const elapsed = Math.max(0, now - lastMoveAt);
+    return Math.max(0, getMoveDelay(normalDelay, slowEffectUntil, now) - elapsed);
+  }
+
   function resetSlowEffect() {
     return 0;
   }
@@ -56,6 +61,7 @@
     choosePowerUpPosition,
     collectPowerUp,
     getMoveDelay,
+    getRemainingMoveDelay,
     isSlowEffectActive,
     resetSlowEffect,
     samePosition

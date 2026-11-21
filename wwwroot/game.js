@@ -23,7 +23,7 @@
     chooseFoodPosition,
     choosePowerUpPosition,
     collectPowerUp,
-    getMoveDelay,
+    getRemainingMoveDelay,
     isSlowEffectActive,
     resetSlowEffect
   } = window.WebSnakeGame;
@@ -58,6 +58,7 @@
   let directionQueue = [];
   let score = 0;
   let timer;
+  let lastMoveAt = 0;
   let slowEffectTimer;
   let slowEffectUntil = 0;
   let running = false;
@@ -130,7 +131,7 @@
 
   function showNameScreen() {
     running = false;
-    clearInterval(timer);
+    clearTimeout(timer);
     clearSlowEffect();
     gameScreen.hidden = true;
     nameScreen.hidden = false;
@@ -174,8 +175,15 @@
   }
 
   function restartMovementTimer() {
-    clearInterval(timer);
-    if (running) timer = setInterval(move, getMoveDelay(normalMoveDelay, slowEffectUntil, Date.now()));
+    clearTimeout(timer);
+    if (!running) return;
+
+    const now = Date.now();
+    timer = setTimeout(() => {
+      lastMoveAt = Date.now();
+      move();
+      restartMovementTimer();
+    }, getRemainingMoveDelay(normalMoveDelay, slowEffectUntil, now, lastMoveAt));
   }
 
   function clearSlowEffect() {
@@ -202,15 +210,16 @@
       slowEffectUntil = 0;
       slowEffectTimer = undefined;
       updateGameStatus();
+      drawBoard();
       restartMovementTimer();
     }, slowEffectDuration);
     updateGameStatus();
-    restartMovementTimer();
   }
 
   function resetGame() {
-    clearInterval(timer);
+    clearTimeout(timer);
     clearSlowEffect();
+    lastMoveAt = Date.now();
     snake = [{ x: 9, y: 10 }, { x: 8, y: 10 }, { x: 7, y: 10 }];
     direction = { x: 1, y: 0 };
     directionQueue = [];
@@ -227,8 +236,9 @@
 
   function finishGame() {
     running = false;
-    clearInterval(timer);
+    clearTimeout(timer);
     clearSlowEffect();
+    drawBoard();
     gameStatus.textContent = "RUN COMPLETE";
     overlayTitle.textContent = "Nice run, " + playerName;
     overlayCopy.textContent = `You collected ${score} ${score === 1 ? "fruit" : "fruits"}. Ready for another?`;

@@ -5,6 +5,7 @@ const {
   choosePowerUpPosition,
   collectPowerUp,
   getMoveDelay,
+  getRemainingMoveDelay,
   isSlowEffectActive,
   resetSlowEffect
 } = require("../wwwroot/game-logic.js");
@@ -100,6 +101,12 @@ test("moving past a power-up leaves the current effect unchanged", () => {
     powerUp,
     slowEffectUntil: 8000
   });
+});
+
+test("movement keeps elapsed time when the slow effect ends", () => {
+  assert.equal(getRemainingMoveDelay(140, 5000, 5000, 4760), 0);
+  assert.equal(getRemainingMoveDelay(140, 5000, 5000, 4900), 40);
+  assert.equal(getRemainingMoveDelay(140, 5000, 4999, 4900), 181);
 });
 
 test("resetting a game clears any active slow effect", () => {
