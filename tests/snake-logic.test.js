@@ -65,3 +65,17 @@ test("rapid turns are applied in order without reversing a queued turn", () => {
   assert.deepEqual(queue, [directions.up, directions.left]);
   assert.equal(queueDirection(queue, directions.right, directions.down), false);
 });
+
+test("moving onto a speed power-up reports its collection", () => {
+  const snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }];
+  const result = moveSnake(
+    snake,
+    directions.right,
+    { x: 0, y: 0 },
+    20,
+    { x: 6, y: 5 }
+  );
+
+  assert.equal(result.collided, false);
+  assert.equal(result.collectedPowerUp, true);
+});
