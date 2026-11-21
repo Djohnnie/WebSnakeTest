@@ -3,13 +3,8 @@ const assert = require("node:assert/strict");
 const {
   chooseFoodPosition,
   choosePowerUpPosition,
-  collectPowerUp,
   createSlowEffect,
-  createSpeedBoost,
-  getMoveDelay,
-  getRemainingMoveDelay,
-  isSlowEffectActive,
-  resetSlowEffect
+  createSpeedBoost
 } = require("../wwwroot/game-logic.js");
 
 test("food is placed on a random grid cell", () => {
@@ -76,64 +71,6 @@ test("no power-up is created without another free cell", () => {
   assert.equal(choosePowerUpPosition(2, snake, null), null);
 });
 
-test("collecting a power-up removes it and starts a five-second slow effect", () => {
-  const now = 12000;
-  const result = collectPowerUp({ x: 2, y: 3 }, { x: 2, y: 3 }, 0, now);
-
-  assert.equal(result.collected, true);
-  assert.equal(result.powerUp, null);
-  assert.equal(result.slowEffectUntil, 17000);
-  assert.equal(isSlowEffectActive(result.slowEffectUntil, 16999), true);
-  assert.equal(isSlowEffectActive(result.slowEffectUntil, 17000), false);
-  assert.equal(getMoveDelay(140, result.slowEffectUntil, 16999), 280);
-  assert.equal(getMoveDelay(140, result.slowEffectUntil, 17000), 140);
-});
-
-test("another collection refreshes the duration without stacking the slowdown", () => {
-  const first = collectPowerUp({ x: 1, y: 1 }, { x: 1, y: 1 }, 0, 1000);
-  const repeated = collectPowerUp(
-    { x: 2, y: 2 },
-    { x: 2, y: 2 },
-    first.slowEffectUntil,
-    4000
-  );
-
-  assert.equal(repeated.slowEffectUntil, 9000);
-  assert.equal(getMoveDelay(140, repeated.slowEffectUntil, 4000), 280);
-  assert.equal(getMoveDelay(140, repeated.slowEffectUntil, 9000), 140);
-});
-
-test("moving past a power-up leaves the current effect unchanged", () => {
-  const powerUp = { x: 4, y: 4 };
-  const result = collectPowerUp({ x: 3, y: 3 }, powerUp, 8000, 3000);
-
-  assert.deepEqual(result, {
-    collected: false,
-    powerUp,
-    slowEffectUntil: 8000
-  });
-});
-
-test("movement keeps elapsed time when the slow effect ends", () => {
-  assert.equal(getRemainingMoveDelay(140, 5000, 5000, 4760), 0);
-  assert.equal(getRemainingMoveDelay(140, 5000, 5000, 4900), 40);
-  assert.equal(getRemainingMoveDelay(140, 5000, 4999, 4900), 181);
-});
-
-test("resetting a game clears any active slow effect", () => {
-  const effectAfterCollection = collectPowerUp(
-    { x: 2, y: 2 },
-    { x: 2, y: 2 },
-    0,
-    3000
-  ).slowEffectUntil;
-  const reset = resetSlowEffect();
-
-  assert.equal(isSlowEffectActive(reset, 3000), false);
-  assert.equal(getMoveDelay(140, reset, 3000), 140);
-  assert.notEqual(reset, effectAfterCollection);
-});
-
 test("collecting a speed boost keeps the base branch behavior", () => {
   let now = 1000;
   const boost = createSpeedBoost(140, 5000, () => now);
@@ -149,7 +86,25 @@ test("collecting a speed boost keeps the base branch behavior", () => {
   assert.equal(boost.getMoveDelay(), 140);
 });
 
-test("a slow effect refreshes without stacking and clears on reset", () => {
+test("collecting a slow power-up starts a five-second half-speed effect", () => {
+  let now = 12000;
+  const effect = createSlowEffect(140, 5000, () => now);
+
+  effect.collect();
+  assert.equal(effect.isActive(), true);
+  assert.equal(effect.getMoveDelay(), 280);
+  assert.equal(effect.remainingMilliseconds(), 5000);
+
+  now = 16999;
+  assert.equal(effect.isActive(), true);
+  assert.equal(effect.getMoveDelay(), 280);
+
+  now = 17000;
+  assert.equal(effect.isActive(), false);
+  assert.equal(effect.getMoveDelay(), 140);
+});
+
+test("a second slow collection refreshes duration without stacking", () => {
   let now = 0;
   const effect = createSlowEffect(140, 5000, () => now);
 
@@ -162,8 +117,29 @@ test("a slow effect refreshes without stacking and clears on reset", () => {
 
   now = 9000;
   assert.equal(effect.isActive(), false);
+  assert.equal(effect.getMoveDelay(), 140);
+});
+
+test("movement keeps elapsed time when a slow effect ends", () => {
+  let now = 0;
+  const effect = createSlowEffect(140, 5000, () => now);
+
+  effect.collect();
+  now = 4999;
+  assert.equal(effect.getRemainingMoveDelay(4900), 181);
+
+  now = 5000;
+  assert.equal(effect.getRemainingMoveDelay(4760), 0);
+  assert.equal(effect.getRemainingMoveDelay(4900), 40);
+});
+
+test("clearing a slow effect resets active timing and speed", () => {
+  let now = 3000;
+  const effect = createSlowEffect(140, 5000, () => now);
+
   effect.collect();
   effect.clear();
+  assert.equal(effect.isActive(), false);
   assert.equal(effect.getMoveDelay(), 140);
   assert.equal(effect.remainingMilliseconds(), 0);
 });

@@ -214,7 +214,6 @@
   }
 
   function collectSlowEffect() {
-    powerUp = null;
     slowEffect.collect();
     clearTimeout(slowEffectTimer);
     slowEffectTimer = setTimeout(endSlowEffect, slowEffect.duration);
@@ -225,8 +224,7 @@
     clearTimeout(timer);
     if (!running) return;
 
-    const elapsed = Math.max(0, Date.now() - lastMoveAt);
-    const remaining = Math.max(0, slowEffect.getMoveDelay() - elapsed);
+    const remaining = slowEffect.getRemainingMoveDelay(lastMoveAt);
     timer = setTimeout(() => {
       timer = undefined;
       move();
@@ -287,6 +285,7 @@
     }
 
     snake = result.snake;
+    powerUp = result.powerUp;
     if (result.collectedPowerUp) collectSlowEffect();
     if (result.ate) {
       score += 1;

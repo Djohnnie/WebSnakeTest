@@ -1,8 +1,4 @@
 (function exposeGameLogic(global) {
-  function samePosition(first, second) {
-    return Boolean(first && second && first.x === second.x && first.y === second.y);
-  }
-
   function chooseOpenPosition(cells, occupiedPositions, random = Math.random) {
     const occupied = new Set(occupiedPositions.map((position) => `${position.x},${position.y}`));
     const available = [];
@@ -28,35 +24,6 @@
     return chooseOpenPosition(cells, [...snake, food], random);
   }
 
-  function collectPowerUp(head, powerUp, slowEffectUntil, now, duration = 5000) {
-    if (!samePosition(head, powerUp)) {
-      return { collected: false, powerUp, slowEffectUntil };
-    }
-
-    return {
-      collected: true,
-      powerUp: null,
-      slowEffectUntil: now + duration
-    };
-  }
-
-  function isSlowEffectActive(slowEffectUntil, now) {
-    return slowEffectUntil > now;
-  }
-
-  function getMoveDelay(normalDelay, slowEffectUntil, now) {
-    return isSlowEffectActive(slowEffectUntil, now) ? normalDelay * 2 : normalDelay;
-  }
-
-  function getRemainingMoveDelay(normalDelay, slowEffectUntil, now, lastMoveAt) {
-    const elapsed = Math.max(0, now - lastMoveAt);
-    return Math.max(0, getMoveDelay(normalDelay, slowEffectUntil, now) - elapsed);
-  }
-
-  function resetSlowEffect() {
-    return 0;
-  }
-
   function createSpeedEffect(
     normalMoveDelay,
     duration,
@@ -78,6 +45,10 @@
       return true;
     }
 
+    function getMoveDelay() {
+      return normalMoveDelay / (isActive() ? activeSpeedMultiplier : 1);
+    }
+
     return {
       collect() {
         expiresAt = now() + duration;
@@ -86,8 +57,10 @@
         expiresAt = null;
       },
       duration,
-      getMoveDelay() {
-        return normalMoveDelay / (isActive() ? activeSpeedMultiplier : 1);
+      getMoveDelay,
+      getRemainingMoveDelay(lastMoveAt) {
+        const elapsed = Math.max(0, now() - lastMoveAt);
+        return Math.max(0, getMoveDelay() - elapsed);
       },
       getSpeedMultiplier() {
         return isActive() ? activeSpeedMultiplier : 1;
@@ -108,14 +81,8 @@
   const gameLogic = {
     chooseFoodPosition,
     choosePowerUpPosition,
-    collectPowerUp,
     createSlowEffect,
-    createSpeedBoost,
-    getMoveDelay,
-    getRemainingMoveDelay,
-    isSlowEffectActive,
-    resetSlowEffect,
-    samePosition
+    createSpeedBoost
   };
   global.WebSnakeGame = gameLogic;
 
