@@ -17,6 +17,7 @@
   const gameStatus = document.querySelector("#game-status");
   const scoreDisplay = document.querySelector("#current-score");
   const highScoreDisplay = document.querySelector("#high-score");
+  const boostIndicator = document.querySelector("#boost-indicator");
   const directionButtons = document.querySelectorAll("[data-direction]");
   const leaderboardDialog = document.querySelector("#leaderboard-dialog");
   const leaderboardList = document.querySelector("#leaderboard-list");
@@ -24,7 +25,10 @@
   const openLeaderboard = document.querySelector("#open-leaderboard");
   const closeLeaderboard = document.querySelector("#close-leaderboard");
   const { directions, queueDirection, moveSnake } = window.SnakeLogic;
-  const { parseLeaderboard, recordLeaderboardScore } = window.WebSnakeGame;
+  const {
+    chooseFoodPosition, choosePowerUpPosition, createSpeedBoost,
+    parseLeaderboard, recordLeaderboardScore
+  } = window.WebSnakeGame;
 
   const cells = 20;
   const cellSize = canvas.width / cells;
@@ -54,14 +58,17 @@
   let leaderboard = parseLeaderboard(readStoredValue(storageKeys.leaderboard));
   let snake;
   let food;
+  let powerUp;
   let direction;
   let directionQueue = [];
   let score = 0;
   let timer;
+  let boostTimer;
   let running = false;
   let leaderboardPausedGame = false;
   let pointerStart;
   let activePointerId;
+  const speedBoost = createSpeedBoost();
 
   function drawBoard() {
     context.fillStyle = "#141c16";
@@ -81,7 +88,12 @@
     if (!snake) return;
     canvas.setAttribute(
       "aria-label",
-      `Snake game board. Head at column ${snake[0].x + 1}, row ${snake[0].y + 1}.`
+      `Snake game board. Head at column ${snake[0].x + 1}, row ${snake[0].y + 1}.` +
+        (powerUp
+          ? ` Speed power-up at column ${powerUp.x + 1}, row ${powerUp.y + 1}.`
+          : speedBoost.isActive()
+            ? " Speed boost active."
+            : "")
     );
     context.fillStyle = "#ff7968";
     context.shadowColor = "#ff7968";
@@ -90,6 +102,32 @@
     context.arc((food.x + 0.5) * cellSize, (food.y + 0.5) * cellSize, cellSize * 0.31, 0, Math.PI * 2);
     context.fill();
     context.shadowBlur = 0;
+
+    if (powerUp) {
+      const centerX = (powerUp.x + 0.5) * cellSize;
+      const centerY = (powerUp.y + 0.5) * cellSize;
+      context.fillStyle = "#61d8e2";
+      context.shadowColor = "#61d8e2";
+      context.shadowBlur = 13;
+      context.beginPath();
+      context.moveTo(centerX, centerY - cellSize * 0.36);
+      context.lineTo(centerX + cellSize * 0.3, centerY);
+      context.lineTo(centerX, centerY + cellSize * 0.36);
+      context.lineTo(centerX - cellSize * 0.3, centerY);
+      context.closePath();
+      context.fill();
+      context.shadowBlur = 0;
+      context.fillStyle = "#10292b";
+      context.beginPath();
+      context.moveTo(centerX + 1, centerY - 6);
+      context.lineTo(centerX - 3, centerY + 1);
+      context.lineTo(centerX + 1, centerY);
+      context.lineTo(centerX - 1, centerY + 6);
+      context.lineTo(centerX + 4, centerY - 2);
+      context.lineTo(centerX + 1, centerY - 1);
+      context.closePath();
+      context.fill();
+    }
 
     snake.forEach((segment, index) => {
       const inset = index === 0 ? 2 : 3;
@@ -109,7 +147,9 @@
 
   function showNameScreen() {
     running = false;
-    clearInterval(timer);
+    clearGameTimers();
+    speedBoost.clear();
+    boostIndicator.hidden = true;
     gameScreen.hidden = true;
     nameScreen.hidden = false;
     nameInput.value = playerName;
@@ -154,10 +194,56 @@
   }
 
   function placeFood() {
-    food = WebSnakeGame.chooseFoodPosition(cells, snake);
+    food = chooseFoodPosition(cells, snake);
+    powerUp = choosePowerUpPosition(cells, snake, food);
+  }
+
+  function clearGameTimers() {
+    clearTimeout(timer);
+    clearTimeout(boostTimer);
+    timer = undefined;
+    boostTimer = undefined;
+  }
+
+  function updateBoostDisplay() {
+    const active = speedBoost.isActive();
+    boostIndicator.hidden = !active;
+    gameStatus.textContent = leaderboardPausedGame ? "PAUSED" : active ? "SPEED BOOST · 2X" : running ? "IN PROGRESS" : "READY WHEN YOU ARE";
+  }
+
+  function endBoost() {
+    speedBoost.clear();
+    boostTimer = undefined;
+    updateBoostDisplay();
+    if (running) {
+      clearTimeout(timer);
+      scheduleMove();
+    }
+    drawBoard();
+  }
+
+  function collectSpeedBoost() {
+    powerUp = null;
+    speedBoost.collect();
+    clearTimeout(boostTimer);
+    boostTimer = setTimeout(endBoost, speedBoost.duration);
+    updateBoostDisplay();
+  }
+
+  function scheduleMove() {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = undefined;
+      move();
+      if (running) scheduleMove();
+    }, speedBoost.getMoveDelay());
   }
 
   function resetGame() {
+    running = false;
+    clearGameTimers();
+    speedBoost.clear();
+    boostIndicator.hidden = true;
     snake = [{ x: 9, y: 10 }, { x: 8, y: 10 }, { x: 7, y: 10 }];
     direction = { x: 1, y: 0 };
     directionQueue = [];
@@ -174,7 +260,9 @@
 
   function finishGame() {
     running = false;
-    clearInterval(timer);
+    clearGameTimers();
+    speedBoost.clear();
+    boostIndicator.hidden = true;
     gameStatus.textContent = "RUN COMPLETE";
     overlayTitle.textContent = "Nice run, " + playerName;
     overlayCopy.textContent = `You collected ${score} ${score === 1 ? "fruit" : "fruits"}. Ready for another?`;
@@ -192,13 +280,14 @@
 
   function move() {
     if (directionQueue.length) direction = directionQueue.shift();
-    const result = moveSnake(snake, direction, food, cells);
+    const result = moveSnake(snake, direction, food, cells, powerUp);
     if (result.collided) {
       finishGame();
       return;
     }
 
     snake = result.snake;
+    if (result.collectedPowerUp) collectSpeedBoost();
     if (result.ate) {
       score += 1;
       scoreDisplay.textContent = String(score).padStart(2, "0");
@@ -244,7 +333,7 @@
     leaderboardPausedGame = running;
     if (leaderboardPausedGame) {
       running = false;
-      clearInterval(timer);
+      clearTimeout(timer);
       gameStatus.textContent = "PAUSED";
     }
     renderLeaderboard();
@@ -258,8 +347,8 @@
     if (!leaderboardPausedGame) return;
     leaderboardPausedGame = false;
     running = true;
-    gameStatus.textContent = "IN PROGRESS";
-    timer = setInterval(move, 140);
+    updateBoostDisplay();
+    scheduleMove();
   });
   startButton.addEventListener("click", () => {
     if (running) return;
@@ -267,7 +356,7 @@
     running = true;
     gameStatus.textContent = "IN PROGRESS";
     overlay.hidden = true;
-    timer = setInterval(move, 140);
+    scheduleMove();
   });
   document.addEventListener("keydown", (event) => {
     if (gameScreen.hidden || !running) return;
