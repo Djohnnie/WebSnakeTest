@@ -17,22 +17,17 @@
   const gameStatus = document.querySelector("#game-status");
   const scoreDisplay = document.querySelector("#current-score");
   const highScoreDisplay = document.querySelector("#high-score");
+  const slowIndicator = document.querySelector("#slow-indicator");
   const directionButtons = document.querySelectorAll("[data-direction]");
   const { directions, queueDirection, moveSnake } = window.SnakeLogic;
-  const {
-    chooseFoodPosition,
-    choosePowerUpPosition,
-    collectPowerUp,
-    getRemainingMoveDelay,
-    isSlowEffectActive,
-    resetSlowEffect
-  } = window.WebSnakeGame;
+  const { chooseFoodPosition, choosePowerUpPosition, createSlowEffect } = window.WebSnakeGame;
 
   const cells = 20;
   const cellSize = canvas.width / cells;
   const normalMoveDelay = 140;
   const slowEffectDuration = 5000;
   const storageKeys = { name: "websnake.playerName", score: "websnake.highScore" };
+
   function readStoredValue(key) {
     try {
       return localStorage.getItem(key);
@@ -58,12 +53,12 @@
   let directionQueue = [];
   let score = 0;
   let timer;
-  let lastMoveAt = 0;
   let slowEffectTimer;
-  let slowEffectUntil = 0;
+  let lastMoveAt = 0;
   let running = false;
   let pointerStart;
   let activePointerId;
+  const slowEffect = createSlowEffect(normalMoveDelay, slowEffectDuration);
 
   function drawBoard() {
     context.fillStyle = "#141c16";
@@ -84,14 +79,20 @@
     canvas.setAttribute(
       "aria-label",
       `Snake game board. Head at column ${snake[0].x + 1}, row ${snake[0].y + 1}.` +
-        (powerUp ? ` Power-up at column ${powerUp.x + 1}, row ${powerUp.y + 1}.` : "") +
-        (isSlowEffectActive(slowEffectUntil, Date.now()) ? " Slow effect active." : "")
+        (powerUp ? ` Slow power-up at column ${powerUp.x + 1}, row ${powerUp.y + 1}.` : "") +
+        (slowEffect.isActive() ? " Slow effect active." : "")
     );
     context.fillStyle = "#ff7968";
     context.shadowColor = "#ff7968";
     context.shadowBlur = 14;
     context.beginPath();
-    context.arc((food.x + 0.5) * cellSize, (food.y + 0.5) * cellSize, cellSize * 0.31, 0, Math.PI * 2);
+    context.arc(
+      (food.x + 0.5) * cellSize,
+      (food.y + 0.5) * cellSize,
+      cellSize * 0.31,
+      0,
+      Math.PI * 2
+    );
     context.fill();
     context.shadowBlur = 0;
 
@@ -105,7 +106,13 @@
       context.shadowColor = "#70d7ff";
       context.shadowBlur = 16;
       context.beginPath();
-      context.roundRect(-cellSize * 0.24, -cellSize * 0.24, cellSize * 0.48, cellSize * 0.48, 3);
+      context.roundRect(
+        -cellSize * 0.24,
+        -cellSize * 0.24,
+        cellSize * 0.48,
+        cellSize * 0.48,
+        3
+      );
       context.fill();
       context.restore();
       context.fillStyle = "#16323a";
@@ -117,22 +124,46 @@
       const inset = index === 0 ? 2 : 3;
       context.fillStyle = index === 0 ? "#d4ff9b" : "#91ca51";
       context.beginPath();
-      context.roundRect(segment.x * cellSize + inset, segment.y * cellSize + inset, cellSize - inset * 2, cellSize - inset * 2, 5);
+      context.roundRect(
+        segment.x * cellSize + inset,
+        segment.y * cellSize + inset,
+        cellSize - inset * 2,
+        cellSize - inset * 2,
+        5
+      );
       context.fill();
       if (index === 0) {
         context.fillStyle = "#192315";
         const eyeOffsetX = direction.x === 0 ? 5 : direction.x > 0 ? 12 : 4;
         const eyeOffsetY = direction.y === 0 ? 5 : direction.y > 0 ? 12 : 4;
-        context.fillRect(segment.x * cellSize + eyeOffsetX, segment.y * cellSize + eyeOffsetY, 2, 2);
-        context.fillRect(segment.x * cellSize + eyeOffsetX + (direction.x === 0 ? 5 : 0), segment.y * cellSize + eyeOffsetY + (direction.y === 0 ? 5 : 0), 2, 2);
+        context.fillRect(
+          segment.x * cellSize + eyeOffsetX,
+          segment.y * cellSize + eyeOffsetY,
+          2,
+          2
+        );
+        context.fillRect(
+          segment.x * cellSize + eyeOffsetX + (direction.x === 0 ? 5 : 0),
+          segment.y * cellSize + eyeOffsetY + (direction.y === 0 ? 5 : 0),
+          2,
+          2
+        );
       }
     });
   }
 
+  function clearGameTimers() {
+    clearTimeout(timer);
+    clearTimeout(slowEffectTimer);
+    timer = undefined;
+    slowEffectTimer = undefined;
+  }
+
   function showNameScreen() {
     running = false;
-    clearTimeout(timer);
-    clearSlowEffect();
+    clearGameTimers();
+    slowEffect.clear();
+    slowIndicator.hidden = true;
     gameScreen.hidden = true;
     nameScreen.hidden = false;
     nameInput.value = playerName;
@@ -163,71 +194,65 @@
     powerUp = choosePowerUpPosition(cells, snake, food);
   }
 
-  function updateGameStatus() {
-    if (!running) return;
-    if (isSlowEffectActive(slowEffectUntil, Date.now())) {
-      gameStatus.textContent = "IN PROGRESS · SLOWED";
-      gameStatus.classList.add("slowed");
-    } else {
-      gameStatus.textContent = "IN PROGRESS";
-      gameStatus.classList.remove("slowed");
-    }
+  function updateSlowDisplay() {
+    const active = slowEffect.isActive();
+    slowIndicator.hidden = !active;
+    gameStatus.textContent = active
+      ? "IN PROGRESS · SLOWED"
+      : running
+        ? "IN PROGRESS"
+        : "READY WHEN YOU ARE";
+    gameStatus.classList.toggle("slowed", active);
   }
 
-  function restartMovementTimer() {
+  function endSlowEffect() {
+    slowEffect.clear();
+    slowEffectTimer = undefined;
+    updateSlowDisplay();
+    if (running) scheduleMove();
+    drawBoard();
+  }
+
+  function collectSlowEffect() {
+    powerUp = null;
+    slowEffect.collect();
+    clearTimeout(slowEffectTimer);
+    slowEffectTimer = setTimeout(endSlowEffect, slowEffect.duration);
+    updateSlowDisplay();
+  }
+
+  function scheduleMove() {
     clearTimeout(timer);
     if (!running) return;
 
-    const now = Date.now();
+    const elapsed = Math.max(0, Date.now() - lastMoveAt);
+    const remaining = Math.max(0, slowEffect.getMoveDelay() - elapsed);
     timer = setTimeout(() => {
-      lastMoveAt = Date.now();
+      timer = undefined;
       move();
-      restartMovementTimer();
-    }, getRemainingMoveDelay(normalMoveDelay, slowEffectUntil, now, lastMoveAt));
-  }
-
-  function clearSlowEffect() {
-    clearTimeout(slowEffectTimer);
-    slowEffectUntil = resetSlowEffect();
-    slowEffectTimer = undefined;
-    gameStatus.classList.remove("slowed");
-  }
-
-  function activateSlowEffect() {
-    const collection = collectPowerUp(
-      snake[0],
-      powerUp,
-      slowEffectUntil,
-      Date.now(),
-      slowEffectDuration
-    );
-    if (!collection.collected) return;
-
-    powerUp = collection.powerUp;
-    slowEffectUntil = collection.slowEffectUntil;
-    clearTimeout(slowEffectTimer);
-    slowEffectTimer = setTimeout(() => {
-      slowEffectUntil = 0;
-      slowEffectTimer = undefined;
-      updateGameStatus();
-      drawBoard();
-      restartMovementTimer();
-    }, slowEffectDuration);
-    updateGameStatus();
+      if (running) {
+        lastMoveAt = Date.now();
+        scheduleMove();
+      }
+    }, remaining);
   }
 
   function resetGame() {
-    clearTimeout(timer);
-    clearSlowEffect();
-    lastMoveAt = Date.now();
+    running = false;
+    clearGameTimers();
+    slowEffect.clear();
+    slowIndicator.hidden = true;
     snake = [{ x: 9, y: 10 }, { x: 8, y: 10 }, { x: 7, y: 10 }];
     direction = { x: 1, y: 0 };
     directionQueue = [];
     score = 0;
+    lastMoveAt = Date.now();
     scoreDisplay.textContent = "00";
     gameStatus.textContent = "READY WHEN YOU ARE";
+    gameStatus.classList.remove("slowed");
     overlayTitle.textContent = "Your run starts here";
-    overlayCopy.textContent = "Use the arrows, WASD, or swipe the board to guide your snake.";
+    overlayCopy.textContent =
+      "Use the arrows, WASD, or swipe the board to guide your snake.";
     startButton.innerHTML = 'START GAME <span aria-hidden="true">→</span>';
     overlay.hidden = false;
     placeFood();
@@ -236,14 +261,17 @@
 
   function finishGame() {
     running = false;
-    clearTimeout(timer);
-    clearSlowEffect();
-    drawBoard();
+    clearGameTimers();
+    slowEffect.clear();
+    slowIndicator.hidden = true;
     gameStatus.textContent = "RUN COMPLETE";
+    gameStatus.classList.remove("slowed");
     overlayTitle.textContent = "Nice run, " + playerName;
-    overlayCopy.textContent = `You collected ${score} ${score === 1 ? "fruit" : "fruits"}. Ready for another?`;
+    overlayCopy.textContent =
+      `You collected ${score} ${score === 1 ? "fruit" : "fruits"}. Ready for another?`;
     startButton.innerHTML = 'PLAY AGAIN <span aria-hidden="true">→</span>';
     overlay.hidden = false;
+    drawBoard();
     requestAnimationFrame(() => startButton.focus());
     highScore = Math.max(score, highScore);
     storeValue(storageKeys.score, String(highScore));
@@ -252,14 +280,14 @@
 
   function move() {
     if (directionQueue.length) direction = directionQueue.shift();
-    const result = moveSnake(snake, direction, food, cells);
+    const result = moveSnake(snake, direction, food, cells, powerUp);
     if (result.collided) {
       finishGame();
       return;
     }
 
     snake = result.snake;
-    activateSlowEffect();
+    if (result.collectedPowerUp) collectSlowEffect();
     if (result.ate) {
       score += 1;
       scoreDisplay.textContent = String(score).padStart(2, "0");
@@ -283,7 +311,9 @@
     const horizontal = pointerEnd.x - pointerStart.x;
     const vertical = pointerEnd.y - pointerStart.y;
     if (Math.max(Math.abs(horizontal), Math.abs(vertical)) < 20) return null;
-    if (Math.abs(horizontal) > Math.abs(vertical)) return horizontal > 0 ? directions.right : directions.left;
+    if (Math.abs(horizontal) > Math.abs(vertical)) {
+      return horizontal > 0 ? directions.right : directions.left;
+    }
     return vertical > 0 ? directions.down : directions.up;
   }
 
@@ -305,17 +335,26 @@
     if (running) return;
     resetGame();
     running = true;
-    updateGameStatus();
+    updateSlowDisplay();
     overlay.hidden = true;
-    restartMovementTimer();
+    lastMoveAt = Date.now();
+    scheduleMove();
   });
   document.addEventListener("keydown", (event) => {
     if (gameScreen.hidden || !running) return;
     const keys = {
-      ArrowUp: directions.up, w: directions.up, W: directions.up,
-      ArrowDown: directions.down, s: directions.down, S: directions.down,
-      ArrowLeft: directions.left, a: directions.left, A: directions.left,
-      ArrowRight: directions.right, d: directions.right, D: directions.right
+      ArrowUp: directions.up,
+      w: directions.up,
+      W: directions.up,
+      ArrowDown: directions.down,
+      s: directions.down,
+      S: directions.down,
+      ArrowLeft: directions.left,
+      a: directions.left,
+      A: directions.left,
+      ArrowRight: directions.right,
+      d: directions.right,
+      D: directions.right
     };
     const requested = keys[event.key];
     if (!requested) return;

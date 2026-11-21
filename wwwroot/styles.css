@@ -105,6 +105,11 @@ h1 { margin: 25px 0 18px; font-size: clamp(46px, 5.2vw, 68px); line-height: .99;
 .score-card strong { display: block; margin-top: 10px; color: #f1f3eb; font-family: var(--mono); font-size: 34px; font-weight: 400; line-height: 1; }
 .high-score-card strong { color: var(--accent); }
 .score-caption { display: block; margin-top: 7px; color: #778373; font-size: 8px; }
+.slow-indicator { display: flex; align-items: center; gap: 11px; padding: 13px 15px; border: 1px solid #3c8790; border-radius: 7px; background: rgba(43, 136, 148, .16); box-shadow: 0 0 22px rgba(74, 202, 213, .08); }
+.slow-icon { width: 32px; height: 32px; display: grid; place-items: center; flex: 0 0 auto; border: 1px solid #53c7d2; border-radius: 6px; color: #74e0e8; font-size: 23px; font-weight: 800; }
+.slow-indicator strong, .slow-indicator small { display: block; }
+.slow-indicator strong { color: #b8f4f7; font-family: var(--mono); font-size: 9px; letter-spacing: .08em; }
+.slow-indicator small { margin-top: 4px; color: #6eb6bc; font-family: var(--mono); font-size: 7px; letter-spacing: .06em; }
 .controls-card p { margin: 10px 0 14px; color: #a4ae9e; font-size: 11px; line-height: 1.55; }
 .key-hint { display: grid; justify-items: center; gap: 3px; }
 .key-row { display: flex; gap: 3px; }
@@ -127,7 +132,7 @@ h1 { margin: 25px 0 18px; font-size: clamp(46px, 5.2vw, 68px); line-height: .99;
   .game-screen { padding: 40px 0 38px; }
   .game-layout { grid-template-columns: 1fr; }
   .score-panel { grid-template-columns: 1fr 1fr; }
-  .player-panel, .controls-card { grid-column: span 2; }
+  .player-panel, .slow-indicator, .controls-card { grid-column: span 2; }
   .controls-card { display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 14px; }
   .controls-card .panel-label { grid-column: 1 / -1; }
   .controls-card p { margin-bottom: 0; }

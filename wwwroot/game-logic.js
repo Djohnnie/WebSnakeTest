@@ -24,7 +24,8 @@
   }
 
   function choosePowerUpPosition(cells, snake, food, random = Math.random) {
-    return chooseOpenPosition(cells, food ? [...snake, food] : snake, random);
+    if (!food) return null;
+    return chooseOpenPosition(cells, [...snake, food], random);
   }
 
   function collectPowerUp(head, powerUp, slowEffectUntil, now, duration = 5000) {
@@ -56,10 +57,60 @@
     return 0;
   }
 
+  function createSpeedEffect(
+    normalMoveDelay,
+    duration,
+    now,
+    activeSpeedMultiplier
+  ) {
+    let expiresAt = null;
+
+    function remainingMilliseconds() {
+      if (expiresAt === null) return 0;
+      return Math.max(0, expiresAt - now());
+    }
+
+    function isActive() {
+      if (remainingMilliseconds() === 0) {
+        expiresAt = null;
+        return false;
+      }
+      return true;
+    }
+
+    return {
+      collect() {
+        expiresAt = now() + duration;
+      },
+      clear() {
+        expiresAt = null;
+      },
+      duration,
+      getMoveDelay() {
+        return normalMoveDelay / (isActive() ? activeSpeedMultiplier : 1);
+      },
+      getSpeedMultiplier() {
+        return isActive() ? activeSpeedMultiplier : 1;
+      },
+      isActive,
+      remainingMilliseconds
+    };
+  }
+
+  function createSpeedBoost(normalMoveDelay = 140, duration = 5000, now = Date.now) {
+    return createSpeedEffect(normalMoveDelay, duration, now, 2);
+  }
+
+  function createSlowEffect(normalMoveDelay = 140, duration = 5000, now = Date.now) {
+    return createSpeedEffect(normalMoveDelay, duration, now, 0.5);
+  }
+
   const gameLogic = {
     chooseFoodPosition,
     choosePowerUpPosition,
     collectPowerUp,
+    createSlowEffect,
+    createSpeedBoost,
     getMoveDelay,
     getRemainingMoveDelay,
     isSlowEffectActive,

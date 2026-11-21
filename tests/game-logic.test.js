@@ -4,6 +4,8 @@ const {
   chooseFoodPosition,
   choosePowerUpPosition,
   collectPowerUp,
+  createSlowEffect,
+  createSpeedBoost,
   getMoveDelay,
   getRemainingMoveDelay,
   isSlowEffectActive,
@@ -28,7 +30,10 @@ test("food never appears on the snake", () => {
 
   for (const value of [0, 0.2, 0.5, 0.999]) {
     const food = chooseFoodPosition(3, snake, () => value);
-    assert.equal(snake.some((segment) => segment.x === food.x && segment.y === food.y), false);
+    assert.equal(
+      snake.some((segment) => segment.x === food.x && segment.y === food.y),
+      false
+    );
   }
 });
 
@@ -63,11 +68,12 @@ test("a fresh power-up selection replaces the previous board location", () => {
   assert.deepEqual(replacement, { x: 1, y: 1 });
 });
 
-test("no power-up is created when only the food remains free", () => {
+test("no power-up is created without another free cell", () => {
   const snake = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }];
   const food = { x: 1, y: 1 };
 
   assert.equal(choosePowerUpPosition(2, snake, food), null);
+  assert.equal(choosePowerUpPosition(2, snake, null), null);
 });
 
 test("collecting a power-up removes it and starts a five-second slow effect", () => {
@@ -85,7 +91,12 @@ test("collecting a power-up removes it and starts a five-second slow effect", ()
 
 test("another collection refreshes the duration without stacking the slowdown", () => {
   const first = collectPowerUp({ x: 1, y: 1 }, { x: 1, y: 1 }, 0, 1000);
-  const repeated = collectPowerUp({ x: 2, y: 2 }, { x: 2, y: 2 }, first.slowEffectUntil, 4000);
+  const repeated = collectPowerUp(
+    { x: 2, y: 2 },
+    { x: 2, y: 2 },
+    first.slowEffectUntil,
+    4000
+  );
 
   assert.equal(repeated.slowEffectUntil, 9000);
   assert.equal(getMoveDelay(140, repeated.slowEffectUntil, 4000), 280);
@@ -121,4 +132,38 @@ test("resetting a game clears any active slow effect", () => {
   assert.equal(isSlowEffectActive(reset, 3000), false);
   assert.equal(getMoveDelay(140, reset, 3000), 140);
   assert.notEqual(reset, effectAfterCollection);
+});
+
+test("collecting a speed boost keeps the base branch behavior", () => {
+  let now = 1000;
+  const boost = createSpeedBoost(140, 5000, () => now);
+
+  boost.collect();
+  assert.equal(boost.getSpeedMultiplier(), 2);
+  assert.equal(boost.getMoveDelay(), 70);
+  assert.equal(boost.remainingMilliseconds(), 5000);
+
+  now += 5000;
+  assert.equal(boost.isActive(), false);
+  assert.equal(boost.getSpeedMultiplier(), 1);
+  assert.equal(boost.getMoveDelay(), 140);
+});
+
+test("a slow effect refreshes without stacking and clears on reset", () => {
+  let now = 0;
+  const effect = createSlowEffect(140, 5000, () => now);
+
+  effect.collect();
+  now = 4000;
+  effect.collect();
+  assert.equal(effect.getSpeedMultiplier(), 0.5);
+  assert.equal(effect.getMoveDelay(), 280);
+  assert.equal(effect.remainingMilliseconds(), 5000);
+
+  now = 9000;
+  assert.equal(effect.isActive(), false);
+  effect.collect();
+  effect.clear();
+  assert.equal(effect.getMoveDelay(), 140);
+  assert.equal(effect.remainingMilliseconds(), 0);
 });
