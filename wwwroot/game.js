@@ -17,14 +17,17 @@
   const gameStatus = document.querySelector("#game-status");
   const scoreDisplay = document.querySelector("#current-score");
   const highScoreDisplay = document.querySelector("#high-score");
-  const boostIndicator = document.querySelector("#boost-indicator");
+  const slowIndicator = document.querySelector("#slow-indicator");
   const directionButtons = document.querySelectorAll("[data-direction]");
   const { directions, queueDirection, moveSnake } = window.SnakeLogic;
-  const { chooseFoodPosition, choosePowerUpPosition, createSpeedBoost } = window.WebSnakeGame;
+  const { chooseFoodPosition, choosePowerUpPosition, createSlowEffect } = window.WebSnakeGame;
 
   const cells = 20;
   const cellSize = canvas.width / cells;
+  const normalMoveDelay = 140;
+  const slowEffectDuration = 5000;
   const storageKeys = { name: "websnake.playerName", score: "websnake.highScore" };
+
   function readStoredValue(key) {
     try {
       return localStorage.getItem(key);
@@ -50,11 +53,12 @@
   let directionQueue = [];
   let score = 0;
   let timer;
-  let boostTimer;
+  let slowEffectTimer;
+  let lastMoveAt = 0;
   let running = false;
   let pointerStart;
   let activePointerId;
-  const speedBoost = createSpeedBoost();
+  const slowEffect = createSlowEffect(normalMoveDelay, slowEffectDuration);
 
   function drawBoard() {
     context.fillStyle = "#141c16";
@@ -75,67 +79,91 @@
     canvas.setAttribute(
       "aria-label",
       `Snake game board. Head at column ${snake[0].x + 1}, row ${snake[0].y + 1}.` +
-        (powerUp
-          ? ` Speed power-up at column ${powerUp.x + 1}, row ${powerUp.y + 1}.`
-          : speedBoost.isActive()
-            ? " Speed boost active."
-            : "")
+        (powerUp ? ` Slow power-up at column ${powerUp.x + 1}, row ${powerUp.y + 1}.` : "") +
+        (slowEffect.isActive() ? " Slow effect active." : "")
     );
     context.fillStyle = "#ff7968";
     context.shadowColor = "#ff7968";
     context.shadowBlur = 14;
     context.beginPath();
-    context.arc((food.x + 0.5) * cellSize, (food.y + 0.5) * cellSize, cellSize * 0.31, 0, Math.PI * 2);
+    context.arc(
+      (food.x + 0.5) * cellSize,
+      (food.y + 0.5) * cellSize,
+      cellSize * 0.31,
+      0,
+      Math.PI * 2
+    );
     context.fill();
     context.shadowBlur = 0;
 
     if (powerUp) {
       const centerX = (powerUp.x + 0.5) * cellSize;
       const centerY = (powerUp.y + 0.5) * cellSize;
-      context.fillStyle = "#61d8e2";
-      context.shadowColor = "#61d8e2";
-      context.shadowBlur = 13;
+      context.save();
+      context.translate(centerX, centerY);
+      context.rotate(Math.PI / 4);
+      context.fillStyle = "#70d7ff";
+      context.shadowColor = "#70d7ff";
+      context.shadowBlur = 16;
       context.beginPath();
-      context.moveTo(centerX, centerY - cellSize * 0.36);
-      context.lineTo(centerX + cellSize * 0.3, centerY);
-      context.lineTo(centerX, centerY + cellSize * 0.36);
-      context.lineTo(centerX - cellSize * 0.3, centerY);
-      context.closePath();
+      context.roundRect(
+        -cellSize * 0.24,
+        -cellSize * 0.24,
+        cellSize * 0.48,
+        cellSize * 0.48,
+        3
+      );
       context.fill();
-      context.shadowBlur = 0;
-      context.fillStyle = "#10292b";
-      context.beginPath();
-      context.moveTo(centerX + 1, centerY - 6);
-      context.lineTo(centerX - 3, centerY + 1);
-      context.lineTo(centerX + 1, centerY);
-      context.lineTo(centerX - 1, centerY + 6);
-      context.lineTo(centerX + 4, centerY - 2);
-      context.lineTo(centerX + 1, centerY - 1);
-      context.closePath();
-      context.fill();
+      context.restore();
+      context.fillStyle = "#16323a";
+      context.fillRect(centerX - 1.5, centerY - 6, 3, 12);
+      context.fillRect(centerX - 6, centerY - 1.5, 12, 3);
     }
 
     snake.forEach((segment, index) => {
       const inset = index === 0 ? 2 : 3;
       context.fillStyle = index === 0 ? "#d4ff9b" : "#91ca51";
       context.beginPath();
-      context.roundRect(segment.x * cellSize + inset, segment.y * cellSize + inset, cellSize - inset * 2, cellSize - inset * 2, 5);
+      context.roundRect(
+        segment.x * cellSize + inset,
+        segment.y * cellSize + inset,
+        cellSize - inset * 2,
+        cellSize - inset * 2,
+        5
+      );
       context.fill();
       if (index === 0) {
         context.fillStyle = "#192315";
         const eyeOffsetX = direction.x === 0 ? 5 : direction.x > 0 ? 12 : 4;
         const eyeOffsetY = direction.y === 0 ? 5 : direction.y > 0 ? 12 : 4;
-        context.fillRect(segment.x * cellSize + eyeOffsetX, segment.y * cellSize + eyeOffsetY, 2, 2);
-        context.fillRect(segment.x * cellSize + eyeOffsetX + (direction.x === 0 ? 5 : 0), segment.y * cellSize + eyeOffsetY + (direction.y === 0 ? 5 : 0), 2, 2);
+        context.fillRect(
+          segment.x * cellSize + eyeOffsetX,
+          segment.y * cellSize + eyeOffsetY,
+          2,
+          2
+        );
+        context.fillRect(
+          segment.x * cellSize + eyeOffsetX + (direction.x === 0 ? 5 : 0),
+          segment.y * cellSize + eyeOffsetY + (direction.y === 0 ? 5 : 0),
+          2,
+          2
+        );
       }
     });
+  }
+
+  function clearGameTimers() {
+    clearTimeout(timer);
+    clearTimeout(slowEffectTimer);
+    timer = undefined;
+    slowEffectTimer = undefined;
   }
 
   function showNameScreen() {
     running = false;
     clearGameTimers();
-    speedBoost.clear();
-    boostIndicator.hidden = true;
+    slowEffect.clear();
+    slowIndicator.hidden = true;
     gameScreen.hidden = true;
     nameScreen.hidden = false;
     nameInput.value = playerName;
@@ -166,60 +194,63 @@
     powerUp = choosePowerUpPosition(cells, snake, food);
   }
 
-  function clearGameTimers() {
-    clearTimeout(timer);
-    clearTimeout(boostTimer);
-    timer = undefined;
-    boostTimer = undefined;
+  function updateSlowDisplay() {
+    const active = slowEffect.isActive();
+    slowIndicator.hidden = !active;
+    gameStatus.textContent = active
+      ? "IN PROGRESS · SLOWED"
+      : running
+        ? "IN PROGRESS"
+        : "READY WHEN YOU ARE";
+    gameStatus.classList.toggle("slowed", active);
   }
 
-  function updateBoostDisplay() {
-    const active = speedBoost.isActive();
-    boostIndicator.hidden = !active;
-    gameStatus.textContent = active ? "SPEED BOOST · 2X" : running ? "IN PROGRESS" : "READY WHEN YOU ARE";
-  }
-
-  function endBoost() {
-    speedBoost.clear();
-    boostTimer = undefined;
-    updateBoostDisplay();
-    if (running) {
-      clearTimeout(timer);
-      scheduleMove();
-    }
+  function endSlowEffect() {
+    slowEffect.clear();
+    slowEffectTimer = undefined;
+    updateSlowDisplay();
+    if (running) scheduleMove();
     drawBoard();
   }
 
-  function collectSpeedBoost() {
-    powerUp = null;
-    speedBoost.collect();
-    clearTimeout(boostTimer);
-    boostTimer = setTimeout(endBoost, speedBoost.duration);
-    updateBoostDisplay();
+  function collectSlowEffect() {
+    slowEffect.collect();
+    clearTimeout(slowEffectTimer);
+    slowEffectTimer = setTimeout(endSlowEffect, slowEffect.duration);
+    updateSlowDisplay();
   }
 
   function scheduleMove() {
     clearTimeout(timer);
+    if (!running) return;
+
+    const remaining = slowEffect.getRemainingMoveDelay(lastMoveAt);
     timer = setTimeout(() => {
       timer = undefined;
       move();
-      if (running) scheduleMove();
-    }, speedBoost.getMoveDelay());
+      if (running) {
+        lastMoveAt = Date.now();
+        scheduleMove();
+      }
+    }, remaining);
   }
 
   function resetGame() {
     running = false;
     clearGameTimers();
-    speedBoost.clear();
-    boostIndicator.hidden = true;
+    slowEffect.clear();
+    slowIndicator.hidden = true;
     snake = [{ x: 9, y: 10 }, { x: 8, y: 10 }, { x: 7, y: 10 }];
     direction = { x: 1, y: 0 };
     directionQueue = [];
     score = 0;
+    lastMoveAt = Date.now();
     scoreDisplay.textContent = "00";
     gameStatus.textContent = "READY WHEN YOU ARE";
+    gameStatus.classList.remove("slowed");
     overlayTitle.textContent = "Your run starts here";
-    overlayCopy.textContent = "Use the arrows, WASD, or swipe the board to guide your snake.";
+    overlayCopy.textContent =
+      "Use the arrows, WASD, or swipe the board to guide your snake.";
     startButton.innerHTML = 'START GAME <span aria-hidden="true">→</span>';
     overlay.hidden = false;
     placeFood();
@@ -229,13 +260,16 @@
   function finishGame() {
     running = false;
     clearGameTimers();
-    speedBoost.clear();
-    boostIndicator.hidden = true;
+    slowEffect.clear();
+    slowIndicator.hidden = true;
     gameStatus.textContent = "RUN COMPLETE";
+    gameStatus.classList.remove("slowed");
     overlayTitle.textContent = "Nice run, " + playerName;
-    overlayCopy.textContent = `You collected ${score} ${score === 1 ? "fruit" : "fruits"}. Ready for another?`;
+    overlayCopy.textContent =
+      `You collected ${score} ${score === 1 ? "fruit" : "fruits"}. Ready for another?`;
     startButton.innerHTML = 'PLAY AGAIN <span aria-hidden="true">→</span>';
     overlay.hidden = false;
+    drawBoard();
     requestAnimationFrame(() => startButton.focus());
     highScore = Math.max(score, highScore);
     storeValue(storageKeys.score, String(highScore));
@@ -251,7 +285,8 @@
     }
 
     snake = result.snake;
-    if (result.collectedPowerUp) collectSpeedBoost();
+    powerUp = result.powerUp;
+    if (result.collectedPowerUp) collectSlowEffect();
     if (result.ate) {
       score += 1;
       scoreDisplay.textContent = String(score).padStart(2, "0");
@@ -275,7 +310,9 @@
     const horizontal = pointerEnd.x - pointerStart.x;
     const vertical = pointerEnd.y - pointerStart.y;
     if (Math.max(Math.abs(horizontal), Math.abs(vertical)) < 20) return null;
-    if (Math.abs(horizontal) > Math.abs(vertical)) return horizontal > 0 ? directions.right : directions.left;
+    if (Math.abs(horizontal) > Math.abs(vertical)) {
+      return horizontal > 0 ? directions.right : directions.left;
+    }
     return vertical > 0 ? directions.down : directions.up;
   }
 
@@ -297,17 +334,26 @@
     if (running) return;
     resetGame();
     running = true;
-    gameStatus.textContent = "IN PROGRESS";
+    updateSlowDisplay();
     overlay.hidden = true;
+    lastMoveAt = Date.now();
     scheduleMove();
   });
   document.addEventListener("keydown", (event) => {
     if (gameScreen.hidden || !running) return;
     const keys = {
-      ArrowUp: directions.up, w: directions.up, W: directions.up,
-      ArrowDown: directions.down, s: directions.down, S: directions.down,
-      ArrowLeft: directions.left, a: directions.left, A: directions.left,
-      ArrowRight: directions.right, d: directions.right, D: directions.right
+      ArrowUp: directions.up,
+      w: directions.up,
+      W: directions.up,
+      ArrowDown: directions.down,
+      s: directions.down,
+      S: directions.down,
+      ArrowLeft: directions.left,
+      a: directions.left,
+      A: directions.left,
+      ArrowRight: directions.right,
+      d: directions.right,
+      D: directions.right
     };
     const requested = keys[event.key];
     if (!requested) return;

@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const {
   chooseFoodPosition,
   choosePowerUpPosition,
+  createSlowEffect,
   createSpeedBoost
 } = require("../wwwroot/game-logic.js");
 
@@ -24,7 +25,10 @@ test("food never appears on the snake", () => {
 
   for (const value of [0, 0.2, 0.5, 0.999]) {
     const food = chooseFoodPosition(3, snake, () => value);
-    assert.equal(snake.some((segment) => segment.x === food.x && segment.y === food.y), false);
+    assert.equal(
+      snake.some((segment) => segment.x === food.x && segment.y === food.y),
+      false
+    );
   }
 });
 
@@ -37,21 +41,29 @@ test("no food is created when every cell is occupied", () => {
   assert.equal(chooseFoodPosition(2, snake), null);
 });
 
-test("speed power-ups are placed away from the snake and food", () => {
-  const snake = [{ x: 1, y: 1 }, { x: 0, y: 1 }];
-  const food = { x: 0, y: 0 };
+test("power-ups spawn randomly without overlapping the snake or food", () => {
+  const snake = [{ x: 0, y: 0 }];
+  const food = { x: 1, y: 0 };
 
-  for (const value of [0, 0.25, 0.5, 0.999]) {
-    const powerUp = choosePowerUpPosition(2, snake, food, () => value);
-    assert.ok(powerUp);
-    assert.equal(powerUp.x === food.x && powerUp.y === food.y, false);
-    assert.equal(snake.some((segment) =>
-      segment.x === powerUp.x && segment.y === powerUp.y
-    ), false);
-  }
+  const first = choosePowerUpPosition(2, snake, food, () => 0);
+  const last = choosePowerUpPosition(2, snake, food, () => 0.999);
+
+  assert.deepEqual(first, { x: 0, y: 1 });
+  assert.deepEqual(last, { x: 1, y: 1 });
+  assert.notDeepEqual(first, food);
 });
 
-test("no speed power-up is created without another free cell", () => {
+test("a fresh power-up selection replaces the previous board location", () => {
+  const snake = [{ x: 0, y: 0 }];
+  const food = { x: 1, y: 0 };
+  const previous = { x: 0, y: 1 };
+  const replacement = choosePowerUpPosition(2, snake, food, () => 0.999);
+
+  assert.notEqual(replacement, previous);
+  assert.deepEqual(replacement, { x: 1, y: 1 });
+});
+
+test("no power-up is created without another free cell", () => {
   const snake = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }];
   const food = { x: 1, y: 1 };
 
@@ -59,7 +71,7 @@ test("no speed power-up is created without another free cell", () => {
   assert.equal(choosePowerUpPosition(2, snake, null), null);
 });
 
-test("collecting a power-up doubles speed for five seconds", () => {
+test("collecting a speed boost keeps the base branch behavior", () => {
   let now = 1000;
   const boost = createSpeedBoost(140, 5000, () => now);
 
@@ -74,29 +86,60 @@ test("collecting a power-up doubles speed for five seconds", () => {
   assert.equal(boost.getMoveDelay(), 140);
 });
 
-test("repeated collection restarts the duration without stacking", () => {
-  let now = 0;
-  const boost = createSpeedBoost(140, 5000, () => now);
+test("collecting a slow power-up starts a five-second half-speed effect", () => {
+  let now = 12000;
+  const effect = createSlowEffect(140, 5000, () => now);
 
-  boost.collect();
-  now = 4000;
-  boost.collect();
-  assert.equal(boost.getSpeedMultiplier(), 2);
-  assert.equal(boost.remainingMilliseconds(), 5000);
+  effect.collect();
+  assert.equal(effect.isActive(), true);
+  assert.equal(effect.getMoveDelay(), 280);
+  assert.equal(effect.remainingMilliseconds(), 5000);
 
-  now = 8999;
-  assert.equal(boost.isActive(), true);
-  now = 9000;
-  assert.equal(boost.isActive(), false);
+  now = 16999;
+  assert.equal(effect.isActive(), true);
+  assert.equal(effect.getMoveDelay(), 280);
+
+  now = 17000;
+  assert.equal(effect.isActive(), false);
+  assert.equal(effect.getMoveDelay(), 140);
 });
 
-test("clearing a boost removes its speed and timer state", () => {
-  let now = 250;
-  const boost = createSpeedBoost(140, 5000, () => now);
+test("a second slow collection refreshes duration without stacking", () => {
+  let now = 0;
+  const effect = createSlowEffect(140, 5000, () => now);
 
-  boost.collect();
-  boost.clear();
-  assert.equal(boost.isActive(), false);
-  assert.equal(boost.getMoveDelay(), 140);
-  assert.equal(boost.remainingMilliseconds(), 0);
+  effect.collect();
+  now = 4000;
+  effect.collect();
+  assert.equal(effect.getSpeedMultiplier(), 0.5);
+  assert.equal(effect.getMoveDelay(), 280);
+  assert.equal(effect.remainingMilliseconds(), 5000);
+
+  now = 9000;
+  assert.equal(effect.isActive(), false);
+  assert.equal(effect.getMoveDelay(), 140);
+});
+
+test("movement keeps elapsed time when a slow effect ends", () => {
+  let now = 0;
+  const effect = createSlowEffect(140, 5000, () => now);
+
+  effect.collect();
+  now = 4999;
+  assert.equal(effect.getRemainingMoveDelay(4900), 181);
+
+  now = 5000;
+  assert.equal(effect.getRemainingMoveDelay(4760), 0);
+  assert.equal(effect.getRemainingMoveDelay(4900), 40);
+});
+
+test("clearing a slow effect resets active timing and speed", () => {
+  let now = 3000;
+  const effect = createSlowEffect(140, 5000, () => now);
+
+  effect.collect();
+  effect.clear();
+  assert.equal(effect.isActive(), false);
+  assert.equal(effect.getMoveDelay(), 140);
+  assert.equal(effect.remainingMilliseconds(), 0);
 });

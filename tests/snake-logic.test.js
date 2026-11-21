@@ -66,7 +66,7 @@ test("rapid turns are applied in order without reversing a queued turn", () => {
   assert.equal(queueDirection(queue, directions.right, directions.down), false);
 });
 
-test("moving onto a speed power-up reports its collection", () => {
+test("moving onto a slow power-up reports its collection", () => {
   const snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }];
   const result = moveSnake(
     snake,
@@ -78,4 +78,19 @@ test("moving onto a speed power-up reports its collection", () => {
 
   assert.equal(result.collided, false);
   assert.equal(result.collectedPowerUp, true);
+  assert.equal(result.powerUp, null);
+});
+
+test("moving past a slow power-up leaves it on the board", () => {
+  const powerUp = { x: 8, y: 5 };
+  const result = moveSnake(
+    [{ x: 5, y: 5 }, { x: 4, y: 5 }],
+    directions.right,
+    { x: 0, y: 0 },
+    20,
+    powerUp
+  );
+
+  assert.equal(result.collectedPowerUp, false);
+  assert.equal(result.powerUp, powerUp);
 });

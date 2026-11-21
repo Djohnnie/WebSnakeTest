@@ -4,15 +4,46 @@ const { dirname, join } = require("node:path");
 
 const root = dirname(__dirname);
 const url = process.argv[2] || "http://127.0.0.1:5000";
-const screenshotPath = process.argv[3] || "/tmp/websnake-speed-boost.png";
+const screenshotPath = process.argv[3] || "/tmp/websnake-slow-effect.png";
 const demoDirectory = process.argv[4] || "/tmp/websnake-demos";
 const overlayPath = join(demoDirectory, "demo-overlay.js");
-const spawnScreenshotPath = join(dirname(screenshotPath), "speed-power-up.png");
+const spawnScreenshotPath = join(dirname(screenshotPath), "slow-power-up.png");
 
 function deterministicRun() {
   localStorage.setItem("websnake.playerName", "Maya");
   const values = [0, 206.1 / 396, 0, 206.1 / 396];
   Math.random = () => values.shift() ?? 0;
+}
+
+function pausedGameClock() {
+  let now = 1000;
+  let nextTimer = 1;
+  const timers = new Map();
+  Date.now = () => now;
+  window.setTimeout = (callback, delay = 0, ...args) => {
+    const id = nextTimer;
+    nextTimer += 1;
+    timers.set(id, {
+      callback: () => callback(...args),
+      due: now + Math.max(0, Number(delay) || 0)
+    });
+    return id;
+  };
+  window.clearTimeout = (id) => timers.delete(id);
+  window.advanceGameClock = (milliseconds) => {
+    const target = now + milliseconds;
+    while (true) {
+      const next = [...timers.entries()]
+        .filter(([, timer]) => timer.due <= target)
+        .sort((first, second) => first[1].due - second[1].due || first[0] - second[0])[0];
+      if (!next) break;
+      const [id, timer] = next;
+      timers.delete(id);
+      now = timer.due;
+      timer.callback();
+    }
+    now = target;
+  };
 }
 
 async function clickCentered(page, locator) {
@@ -42,12 +73,13 @@ async function main() {
     });
     const screenshotPage = await screenshotContext.newPage();
     await screenshotPage.addInitScript(deterministicRun);
+    await screenshotPage.addInitScript(pausedGameClock);
     await screenshotPage.goto(url, { waitUntil: "networkidle" });
     await screenshotPage.locator("#start-game").click();
     await screenshotPage.locator("#board-overlay").waitFor({ state: "hidden" });
     await screenshotPage.screenshot({ path: spawnScreenshotPath, fullPage: false });
-    await screenshotPage.locator("#boost-indicator").waitFor({ state: "visible" });
-    await screenshotPage.waitForTimeout(120);
+    await screenshotPage.evaluate(() => window.advanceGameClock(140));
+    await screenshotPage.locator("#slow-indicator").waitFor({ state: "visible" });
     await screenshotPage.screenshot({ path: screenshotPath, fullPage: false });
     await screenshotContext.close();
 
@@ -65,14 +97,14 @@ async function main() {
     await demoPage.goto(url, { waitUntil: "networkidle" });
     await demoPage.evaluate((text) => window.dghsfCaption(text), "Start the run");
     await clickCentered(demoPage, demoPage.locator("#start-game"));
-    await demoPage.locator("#boost-indicator").waitFor({ state: "visible" });
-    await demoPage.evaluate((text) => window.dghsfCaption(text), "Lightning doubles speed for five seconds");
+    await demoPage.locator("#slow-indicator").waitFor({ state: "visible" });
+    await demoPage.evaluate((text) => window.dghsfCaption(text), "The power-up halves speed for five seconds");
     await demoPage.keyboard.press("ArrowUp");
     await demoPage.waitForTimeout(420);
 
     const route = ["ArrowLeft", "ArrowDown", "ArrowRight", "ArrowUp"];
     let routeIndex = 0;
-    while (await demoPage.locator("#boost-indicator").isVisible()) {
+    while (await demoPage.locator("#slow-indicator").isVisible()) {
       await demoPage.keyboard.press(route[routeIndex % route.length]);
       routeIndex += 1;
       await demoPage.waitForTimeout(350);
@@ -83,7 +115,7 @@ async function main() {
 
     const videoPath = await demoPage.video().path();
     await demoContext.close();
-    renameSync(videoPath, join(demoDirectory, "speed-boost-demo.webm"));
+    renameSync(videoPath, join(demoDirectory, "slow-effect-demo.webm"));
   } finally {
     await browser.close();
   }

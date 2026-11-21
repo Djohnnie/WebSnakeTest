@@ -41,10 +41,19 @@
       head.y >= cells ||
       body.some((segment) => segment.x === head.x && segment.y === head.y);
 
-    if (collided) return { collided, ate: false, collectedPowerUp: false, head, snake };
+    if (collided) {
+      return { collided, ate: false, collectedPowerUp: false, head, powerUp, snake };
+    }
 
     const nextSnake = [head, ...(ate ? snake : snake.slice(0, -1))];
-    return { collided: false, ate, collectedPowerUp, head, snake: nextSnake };
+    return {
+      collided: false,
+      ate,
+      collectedPowerUp,
+      head,
+      powerUp: collectedPowerUp ? null : powerUp,
+      snake: nextSnake
+    };
   }
 
   return { directions, queueDirection, moveSnake };
