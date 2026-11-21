@@ -27,9 +27,12 @@
     return true;
   }
 
-  function moveSnake(snake, direction, food, cells) {
+  function moveSnake(snake, direction, food, cells, powerUp = null) {
     const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
     const ate = head.x === food.x && head.y === food.y;
+    const collectedPowerUp = Boolean(
+      powerUp && head.x === powerUp.x && head.y === powerUp.y
+    );
     const body = ate ? snake : snake.slice(0, -1);
     const collided =
       head.x < 0 ||
@@ -38,10 +41,10 @@
       head.y >= cells ||
       body.some((segment) => segment.x === head.x && segment.y === head.y);
 
-    if (collided) return { collided, ate: false, head, snake };
+    if (collided) return { collided, ate: false, collectedPowerUp: false, head, snake };
 
     const nextSnake = [head, ...(ate ? snake : snake.slice(0, -1))];
-    return { collided: false, ate, head, snake: nextSnake };
+    return { collided: false, ate, collectedPowerUp, head, snake: nextSnake };
   }
 
   return { directions, queueDirection, moveSnake };
