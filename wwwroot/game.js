@@ -19,9 +19,19 @@
   const highScoreDisplay = document.querySelector("#high-score");
   const directionButtons = document.querySelectorAll("[data-direction]");
   const { directions, queueDirection, moveSnake } = window.SnakeLogic;
+  const {
+    chooseFoodPosition,
+    choosePowerUpPosition,
+    collectPowerUp,
+    getMoveDelay,
+    isSlowEffectActive,
+    resetSlowEffect
+  } = window.WebSnakeGame;
 
   const cells = 20;
   const cellSize = canvas.width / cells;
+  const normalMoveDelay = 140;
+  const slowEffectDuration = 5000;
   const storageKeys = { name: "websnake.playerName", score: "websnake.highScore" };
   function readStoredValue(key) {
     try {
@@ -43,10 +53,13 @@
   let highScore = Number(readStoredValue(storageKeys.score)) || 0;
   let snake;
   let food;
+  let powerUp;
   let direction;
   let directionQueue = [];
   let score = 0;
   let timer;
+  let slowEffectTimer;
+  let slowEffectUntil = 0;
   let running = false;
   let pointerStart;
   let activePointerId;
@@ -69,7 +82,9 @@
     if (!snake) return;
     canvas.setAttribute(
       "aria-label",
-      `Snake game board. Head at column ${snake[0].x + 1}, row ${snake[0].y + 1}.`
+      `Snake game board. Head at column ${snake[0].x + 1}, row ${snake[0].y + 1}.` +
+        (powerUp ? ` Power-up at column ${powerUp.x + 1}, row ${powerUp.y + 1}.` : "") +
+        (isSlowEffectActive(slowEffectUntil, Date.now()) ? " Slow effect active." : "")
     );
     context.fillStyle = "#ff7968";
     context.shadowColor = "#ff7968";
@@ -78,6 +93,24 @@
     context.arc((food.x + 0.5) * cellSize, (food.y + 0.5) * cellSize, cellSize * 0.31, 0, Math.PI * 2);
     context.fill();
     context.shadowBlur = 0;
+
+    if (powerUp) {
+      const centerX = (powerUp.x + 0.5) * cellSize;
+      const centerY = (powerUp.y + 0.5) * cellSize;
+      context.save();
+      context.translate(centerX, centerY);
+      context.rotate(Math.PI / 4);
+      context.fillStyle = "#70d7ff";
+      context.shadowColor = "#70d7ff";
+      context.shadowBlur = 16;
+      context.beginPath();
+      context.roundRect(-cellSize * 0.24, -cellSize * 0.24, cellSize * 0.48, cellSize * 0.48, 3);
+      context.fill();
+      context.restore();
+      context.fillStyle = "#16323a";
+      context.fillRect(centerX - 1.5, centerY - 6, 3, 12);
+      context.fillRect(centerX - 6, centerY - 1.5, 12, 3);
+    }
 
     snake.forEach((segment, index) => {
       const inset = index === 0 ? 2 : 3;
@@ -98,6 +131,7 @@
   function showNameScreen() {
     running = false;
     clearInterval(timer);
+    clearSlowEffect();
     gameScreen.hidden = true;
     nameScreen.hidden = false;
     nameInput.value = playerName;
@@ -124,10 +158,59 @@
   }
 
   function placeFood() {
-    food = WebSnakeGame.chooseFoodPosition(cells, snake);
+    food = chooseFoodPosition(cells, snake);
+    powerUp = choosePowerUpPosition(cells, snake, food);
+  }
+
+  function updateGameStatus() {
+    if (!running) return;
+    if (isSlowEffectActive(slowEffectUntil, Date.now())) {
+      gameStatus.textContent = "IN PROGRESS · SLOWED";
+      gameStatus.classList.add("slowed");
+    } else {
+      gameStatus.textContent = "IN PROGRESS";
+      gameStatus.classList.remove("slowed");
+    }
+  }
+
+  function restartMovementTimer() {
+    clearInterval(timer);
+    if (running) timer = setInterval(move, getMoveDelay(normalMoveDelay, slowEffectUntil, Date.now()));
+  }
+
+  function clearSlowEffect() {
+    clearTimeout(slowEffectTimer);
+    slowEffectUntil = resetSlowEffect();
+    slowEffectTimer = undefined;
+    gameStatus.classList.remove("slowed");
+  }
+
+  function activateSlowEffect() {
+    const collection = collectPowerUp(
+      snake[0],
+      powerUp,
+      slowEffectUntil,
+      Date.now(),
+      slowEffectDuration
+    );
+    if (!collection.collected) return;
+
+    powerUp = collection.powerUp;
+    slowEffectUntil = collection.slowEffectUntil;
+    clearTimeout(slowEffectTimer);
+    slowEffectTimer = setTimeout(() => {
+      slowEffectUntil = 0;
+      slowEffectTimer = undefined;
+      updateGameStatus();
+      restartMovementTimer();
+    }, slowEffectDuration);
+    updateGameStatus();
+    restartMovementTimer();
   }
 
   function resetGame() {
+    clearInterval(timer);
+    clearSlowEffect();
     snake = [{ x: 9, y: 10 }, { x: 8, y: 10 }, { x: 7, y: 10 }];
     direction = { x: 1, y: 0 };
     directionQueue = [];
@@ -145,6 +228,7 @@
   function finishGame() {
     running = false;
     clearInterval(timer);
+    clearSlowEffect();
     gameStatus.textContent = "RUN COMPLETE";
     overlayTitle.textContent = "Nice run, " + playerName;
     overlayCopy.textContent = `You collected ${score} ${score === 1 ? "fruit" : "fruits"}. Ready for another?`;
@@ -165,6 +249,7 @@
     }
 
     snake = result.snake;
+    activateSlowEffect();
     if (result.ate) {
       score += 1;
       scoreDisplay.textContent = String(score).padStart(2, "0");
@@ -210,9 +295,9 @@
     if (running) return;
     resetGame();
     running = true;
-    gameStatus.textContent = "IN PROGRESS";
+    updateGameStatus();
     overlay.hidden = true;
-    timer = setInterval(move, 140);
+    restartMovementTimer();
   });
   document.addEventListener("keydown", (event) => {
     if (gameScreen.hidden || !running) return;

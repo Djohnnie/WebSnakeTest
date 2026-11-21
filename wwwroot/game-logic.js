@@ -1,6 +1,10 @@
 (function exposeGameLogic(global) {
-  function chooseFoodPosition(cells, snake, random = Math.random) {
-    const occupied = new Set(snake.map((segment) => `${segment.x},${segment.y}`));
+  function samePosition(first, second) {
+    return Boolean(first && second && first.x === second.x && first.y === second.y);
+  }
+
+  function chooseOpenPosition(cells, occupiedPositions, random = Math.random) {
+    const occupied = new Set(occupiedPositions.map((position) => `${position.x},${position.y}`));
     const available = [];
 
     for (let y = 0; y < cells; y += 1) {
@@ -15,7 +19,47 @@
     return available[index];
   }
 
-  const gameLogic = { chooseFoodPosition };
+  function chooseFoodPosition(cells, snake, random = Math.random) {
+    return chooseOpenPosition(cells, snake, random);
+  }
+
+  function choosePowerUpPosition(cells, snake, food, random = Math.random) {
+    return chooseOpenPosition(cells, food ? [...snake, food] : snake, random);
+  }
+
+  function collectPowerUp(head, powerUp, slowEffectUntil, now, duration = 5000) {
+    if (!samePosition(head, powerUp)) {
+      return { collected: false, powerUp, slowEffectUntil };
+    }
+
+    return {
+      collected: true,
+      powerUp: null,
+      slowEffectUntil: now + duration
+    };
+  }
+
+  function isSlowEffectActive(slowEffectUntil, now) {
+    return slowEffectUntil > now;
+  }
+
+  function getMoveDelay(normalDelay, slowEffectUntil, now) {
+    return isSlowEffectActive(slowEffectUntil, now) ? normalDelay * 2 : normalDelay;
+  }
+
+  function resetSlowEffect() {
+    return 0;
+  }
+
+  const gameLogic = {
+    chooseFoodPosition,
+    choosePowerUpPosition,
+    collectPowerUp,
+    getMoveDelay,
+    isSlowEffectActive,
+    resetSlowEffect,
+    samePosition
+  };
   global.WebSnakeGame = gameLogic;
 
   if (typeof module !== "undefined" && module.exports) module.exports = gameLogic;
