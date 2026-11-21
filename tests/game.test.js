@@ -21,12 +21,13 @@ function createGame(initialLeaderboard, moveSnake = () => ({ collided: true })) 
     return {
       width: 400,
       dataset: {},
+      children: [],
       addEventListener: (type, listener) => { listeners[type] = listener; },
       click: () => listeners.click(),
       getContext: () => context,
       setAttribute: () => {},
-      replaceChildren: () => {},
-      append: () => {},
+      replaceChildren(...children) { this.children = children; },
+      append(...children) { this.children.push(...children); },
       showModal: () => {},
       close: () => listeners.close()
     };
@@ -84,6 +85,12 @@ function createGame(initialLeaderboard, moveSnake = () => ({ collided: true })) 
   };
 }
 
+function renderedStandings(game) {
+  return game.elements.get("#leaderboard-list").children.map((item) =>
+    item.children.map((child) => child.textContent)
+  );
+}
+
 test("finishing a run merges newer persisted standings with the session standings", () => {
   const game = createGame([{ name: "Grace", score: 8 }, { name: "Ada", score: 3 }]);
   game.values.set("websnake.leaderboard", JSON.stringify([
@@ -95,6 +102,50 @@ test("finishing a run merges newer persisted standings with the session standing
   assert.deepEqual(JSON.parse(game.values.get("websnake.leaderboard")), [
     { name: "Grace", score: 8 }, { name: "ada", score: 7 }, { name: "Linus", score: 5 }
   ]);
+});
+
+test("opening the leaderboard refreshes and merges the latest persisted standings", () => {
+  const game = createGame([]);
+  assert.equal(game.elements.get("#leaderboard-empty").hidden, false);
+  game.values.set("websnake.leaderboard", JSON.stringify([
+    { name: "Ada", score: 3 }, { name: "ada", score: 7 }, { name: "Grace", score: 8 }
+  ]));
+
+  game.elements.get("#open-leaderboard").click();
+  assert.equal(game.elements.get("#leaderboard-empty").hidden, true);
+  assert.deepEqual(renderedStandings(game), [
+    ["01", "Grace", "8 PTS"], ["02", "ada", "7 PTS"]
+  ]);
+  game.elements.get("#close-leaderboard").click();
+  game.values.set("websnake.leaderboard", JSON.stringify([
+    { name: "Ada", score: 2 }, { name: "Linus", score: 5 }
+  ]));
+  game.elements.get("#open-leaderboard").click();
+  assert.deepEqual(renderedStandings(game), [
+    ["01", "Grace", "8 PTS"], ["02", "ada", "7 PTS"], ["03", "Linus", "5 PTS"]
+  ]);
+  game.elements.get("#close-leaderboard").click();
+  game.values.set("websnake.leaderboard", JSON.stringify([
+    ...Array.from({ length: 10 }, (_, index) => ({ name: `Player ${index}`, score: index + 10 })),
+    { name: "Ada", score: 2 }, { name: "Invalid", score: -1 }
+  ]));
+
+  game.elements.get("#open-leaderboard").click();
+  assert.equal(renderedStandings(game).length, 10);
+  assert.deepEqual(renderedStandings(game)[0], ["01", "Player 9", "19 PTS"]);
+  assert.deepEqual(renderedStandings(game)[9], ["10", "Player 0", "10 PTS"]);
+});
+
+test("opening the leaderboard retains session standings when storage is invalid or unavailable", () => {
+  const game = createGame([{ name: "Grace", score: 8 }]);
+  game.values.set("websnake.leaderboard", "{broken");
+
+  game.elements.get("#open-leaderboard").click();
+  assert.deepEqual(renderedStandings(game), [["01", "Grace", "8 PTS"]]);
+  game.elements.get("#close-leaderboard").click();
+  game.failLeaderboardRead();
+  game.elements.get("#open-leaderboard").click();
+  assert.deepEqual(renderedStandings(game), [["01", "Grace", "8 PTS"]]);
 });
 
 test("leaderboard pauses and resumes movement at the active boost speed", () => {

@@ -40,10 +40,14 @@
   function parseLeaderboard(value) {
     if (!value) return [];
     try {
-      return normalizeLeaderboard(JSON.parse(value)).slice(0, leaderboardLimit);
+      return mergeLeaderboard(JSON.parse(value));
     } catch {
       return [];
     }
+  }
+
+  function mergeLeaderboard(entries) {
+    return normalizeLeaderboard(entries).slice(0, leaderboardLimit);
   }
 
   function recordLeaderboardScore(entries, name, score, limit = leaderboardLimit) {
@@ -100,7 +104,7 @@
 
   const gameLogic = {
     chooseFoodPosition, choosePowerUpPosition, createSpeedBoost,
-    parseLeaderboard, recordLeaderboardScore
+    parseLeaderboard, mergeLeaderboard, recordLeaderboardScore
   };
   global.WebSnakeGame = gameLogic;
 

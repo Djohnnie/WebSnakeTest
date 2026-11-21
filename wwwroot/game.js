@@ -27,7 +27,7 @@
   const { directions, queueDirection, moveSnake } = window.SnakeLogic;
   const {
     chooseFoodPosition, choosePowerUpPosition, createSpeedBoost,
-    parseLeaderboard, recordLeaderboardScore
+    parseLeaderboard, mergeLeaderboard, recordLeaderboardScore
   } = window.WebSnakeGame;
 
   const cells = 20;
@@ -336,6 +336,8 @@
       clearTimeout(timer);
       gameStatus.textContent = "PAUSED";
     }
+    const storedLeaderboard = parseLeaderboard(readStoredValue(storageKeys.leaderboard));
+    leaderboard = mergeLeaderboard([...leaderboard, ...storedLeaderboard]);
     renderLeaderboard();
     leaderboardDialog.showModal();
   });
