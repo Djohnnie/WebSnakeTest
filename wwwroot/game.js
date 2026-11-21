@@ -19,12 +19,24 @@
   const highScoreDisplay = document.querySelector("#high-score");
   const boostIndicator = document.querySelector("#boost-indicator");
   const directionButtons = document.querySelectorAll("[data-direction]");
+  const leaderboardDialog = document.querySelector("#leaderboard-dialog");
+  const leaderboardList = document.querySelector("#leaderboard-list");
+  const leaderboardEmpty = document.querySelector("#leaderboard-empty");
+  const openLeaderboard = document.querySelector("#open-leaderboard");
+  const closeLeaderboard = document.querySelector("#close-leaderboard");
   const { directions, queueDirection, moveSnake } = window.SnakeLogic;
-  const { chooseFoodPosition, choosePowerUpPosition, createSpeedBoost } = window.WebSnakeGame;
+  const {
+    chooseFoodPosition, choosePowerUpPosition, createSpeedBoost,
+    parseLeaderboard, mergeLeaderboard, recordLeaderboardScore
+  } = window.WebSnakeGame;
 
   const cells = 20;
   const cellSize = canvas.width / cells;
-  const storageKeys = { name: "websnake.playerName", score: "websnake.highScore" };
+  const storageKeys = {
+    name: "websnake.playerName",
+    score: "websnake.highScore",
+    leaderboard: "websnake.leaderboard"
+  };
   function readStoredValue(key) {
     try {
       return localStorage.getItem(key);
@@ -43,6 +55,7 @@
 
   let playerName = readStoredValue(storageKeys.name) || "";
   let highScore = Number(readStoredValue(storageKeys.score)) || 0;
+  let leaderboard = parseLeaderboard(readStoredValue(storageKeys.leaderboard));
   let snake;
   let food;
   let powerUp;
@@ -52,6 +65,7 @@
   let timer;
   let boostTimer;
   let running = false;
+  let leaderboardPausedGame = false;
   let pointerStart;
   let activePointerId;
   const speedBoost = createSpeedBoost();
@@ -161,6 +175,24 @@
     errorMessage.hidden = true;
   }
 
+  function renderLeaderboard() {
+    leaderboardList.replaceChildren();
+    leaderboardEmpty.hidden = leaderboard.length > 0;
+    leaderboard.forEach((entry, index) => {
+      const item = document.createElement("li");
+      const rank = document.createElement("span");
+      const name = document.createElement("span");
+      const points = document.createElement("strong");
+      rank.className = "leaderboard-rank";
+      rank.textContent = String(index + 1).padStart(2, "0");
+      name.className = "leaderboard-name";
+      name.textContent = entry.name;
+      points.textContent = `${entry.score} ${entry.score === 1 ? "PT" : "PTS"}`;
+      item.append(rank, name, points);
+      leaderboardList.append(item);
+    });
+  }
+
   function placeFood() {
     food = chooseFoodPosition(cells, snake);
     powerUp = choosePowerUpPosition(cells, snake, food);
@@ -176,7 +208,7 @@
   function updateBoostDisplay() {
     const active = speedBoost.isActive();
     boostIndicator.hidden = !active;
-    gameStatus.textContent = active ? "SPEED BOOST · 2X" : running ? "IN PROGRESS" : "READY WHEN YOU ARE";
+    gameStatus.textContent = leaderboardPausedGame ? "PAUSED" : active ? "SPEED BOOST · 2X" : running ? "IN PROGRESS" : "READY WHEN YOU ARE";
   }
 
   function endBoost() {
@@ -240,6 +272,10 @@
     highScore = Math.max(score, highScore);
     storeValue(storageKeys.score, String(highScore));
     highScoreDisplay.textContent = String(highScore).padStart(2, "0");
+    const storedLeaderboard = parseLeaderboard(readStoredValue(storageKeys.leaderboard));
+    leaderboard = recordLeaderboardScore([...leaderboard, ...storedLeaderboard], playerName, score);
+    storeValue(storageKeys.leaderboard, JSON.stringify(leaderboard));
+    renderLeaderboard();
   }
 
   function move() {
@@ -293,6 +329,29 @@
     showGameScreen();
   });
   nameButton.addEventListener("click", showNameScreen);
+  openLeaderboard.addEventListener("click", () => {
+    leaderboardPausedGame = running;
+    if (leaderboardPausedGame) {
+      running = false;
+      clearTimeout(timer);
+      gameStatus.textContent = "PAUSED";
+    }
+    const storedLeaderboard = parseLeaderboard(readStoredValue(storageKeys.leaderboard));
+    leaderboard = mergeLeaderboard([...leaderboard, ...storedLeaderboard]);
+    renderLeaderboard();
+    leaderboardDialog.showModal();
+  });
+  closeLeaderboard.addEventListener("click", () => leaderboardDialog.close());
+  leaderboardDialog.addEventListener("click", (event) => {
+    if (event.target === leaderboardDialog) leaderboardDialog.close();
+  });
+  leaderboardDialog.addEventListener("close", () => {
+    if (!leaderboardPausedGame) return;
+    leaderboardPausedGame = false;
+    running = true;
+    updateBoostDisplay();
+    scheduleMove();
+  });
   startButton.addEventListener("click", () => {
     if (running) return;
     resetGame();
@@ -336,6 +395,7 @@
     activePointerId = undefined;
   });
 
+  renderLeaderboard();
   drawBoard();
   if (playerName) showGameScreen();
 })();

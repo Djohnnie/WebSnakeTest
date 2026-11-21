@@ -3,7 +3,9 @@ const assert = require("node:assert/strict");
 const {
   chooseFoodPosition,
   choosePowerUpPosition,
-  createSpeedBoost
+  createSpeedBoost,
+  parseLeaderboard,
+  recordLeaderboardScore
 } = require("../wwwroot/game-logic.js");
 
 test("food is placed on a random grid cell", () => {
@@ -35,6 +37,40 @@ test("no food is created when every cell is occupied", () => {
   }
 
   assert.equal(chooseFoodPosition(2, snake), null);
+});
+
+test("leaderboard scores are sorted and limited to each player's best", () => {
+  let standings = recordLeaderboardScore([], "Ada", 3);
+  standings = recordLeaderboardScore(standings, "Grace", 5);
+  standings = recordLeaderboardScore(standings, "Ada", 2);
+  standings = recordLeaderboardScore(standings, "ada", 7);
+  standings = recordLeaderboardScore(standings, "Linus", 4, 2);
+
+  assert.deepEqual(standings, [
+    { name: "ada", score: 7 },
+    { name: "Grace", score: 5 }
+  ]);
+});
+
+test("leaderboard storage is parsed safely and invalid entries are ignored", () => {
+  assert.deepEqual(parseLeaderboard(null), []);
+  assert.deepEqual(parseLeaderboard("{broken"), []);
+  assert.deepEqual(parseLeaderboard(JSON.stringify([
+    { name: "Ada", score: 4 },
+    { name: " ", score: 8 },
+    { name: "Grace", score: -1 },
+    { name: "Linus", score: "6" }
+  ])), [{ name: "Ada", score: 4 }]);
+});
+
+test("loaded standings are normalized before selecting the top ten", () => {
+  const entries = Array.from({ length: 12 }, (_, score) => ({ name: `Player ${score}`, score }));
+  entries.push({ name: " player 0 ", score: 20 }, { name: "", score: 100 });
+
+  assert.deepEqual(parseLeaderboard(JSON.stringify(entries)), [
+    { name: "player 0", score: 20 },
+    ...entries.slice(3, 12).reverse()
+  ]);
 });
 
 test("speed power-ups are placed away from the snake and food", () => {

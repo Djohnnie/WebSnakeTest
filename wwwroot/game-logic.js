@@ -1,4 +1,6 @@
 (function exposeGameLogic(global) {
+  const leaderboardLimit = 10;
+
   function chooseFreePosition(cells, occupiedPositions, random = Math.random) {
     const occupied = new Set(occupiedPositions.map((position) => `${position.x},${position.y}`));
     const available = [];
@@ -13,6 +15,47 @@
 
     const index = Math.min(Math.floor(random() * available.length), available.length - 1);
     return available[index];
+  }
+
+  function normalizeLeaderboard(entries) {
+    if (!Array.isArray(entries)) return [];
+
+    const players = new Map();
+    for (const entry of entries) {
+      if (!entry || typeof entry.name !== "string") continue;
+      const name = entry.name.trim();
+      const score = entry.score;
+      if (!name || typeof score !== "number" || !Number.isInteger(score) || score < 0) continue;
+
+      const key = name.toLocaleLowerCase();
+      const previous = players.get(key);
+      if (!previous || score > previous.score) players.set(key, { name, score });
+    }
+
+    return [...players.values()].sort((first, second) =>
+      second.score - first.score || first.name.localeCompare(second.name)
+    );
+  }
+
+  function parseLeaderboard(value) {
+    if (!value) return [];
+    try {
+      return mergeLeaderboard(JSON.parse(value));
+    } catch {
+      return [];
+    }
+  }
+
+  function mergeLeaderboard(entries) {
+    return normalizeLeaderboard(entries).slice(0, leaderboardLimit);
+  }
+
+  function recordLeaderboardScore(entries, name, score, limit = leaderboardLimit) {
+    const standings = normalizeLeaderboard(entries);
+    const cleanName = String(name).trim();
+    if (!cleanName || !Number.isInteger(score) || score < 0) return standings.slice(0, limit);
+
+    return normalizeLeaderboard([...standings, { name: cleanName, score }]).slice(0, limit);
   }
 
   function chooseFoodPosition(cells, snake, random = Math.random) {
@@ -59,7 +102,10 @@
     };
   }
 
-  const gameLogic = { chooseFoodPosition, choosePowerUpPosition, createSpeedBoost };
+  const gameLogic = {
+    chooseFoodPosition, choosePowerUpPosition, createSpeedBoost,
+    parseLeaderboard, mergeLeaderboard, recordLeaderboardScore
+  };
   global.WebSnakeGame = gameLogic;
 
   if (typeof module !== "undefined" && module.exports) module.exports = gameLogic;
