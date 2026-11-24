@@ -27,7 +27,7 @@
             "padding:15px 28px",
             "color:#fff",
             "background:linear-gradient(90deg,rgba(8,8,13,.96),rgba(38,12,29,.96))",
-            "border-top:2px solid #ff3b9d",
+            "border-top:2px solid #ff6a00",
             "font:600 18px/1.3 Inter,system-ui,sans-serif",
             "text-align:center",
             "pointer-events:none"

@@ -20,7 +20,7 @@ body {
     min-height: 100vh;
     margin: 0;
     background:
-        radial-gradient(circle at 8% 4%, rgba(255, 45, 145, 0.15), transparent 28rem),
+        radial-gradient(circle at 8% 4%, rgba(255, 106, 0, 0.15), transparent 28rem),
         radial-gradient(circle at 90% 75%, rgba(54, 132, 255, 0.08), transparent 30rem),
         #08080d;
 }
@@ -37,7 +37,7 @@ button {
 button:focus-visible,
 input:focus-visible,
 [tabindex]:focus-visible {
-    outline: 3px solid rgba(255, 71, 159, 0.55);
+    outline: 3px solid rgba(255, 122, 26, 0.55);
     outline-offset: 3px;
 }
 
@@ -100,7 +100,7 @@ h1:focus {
     }
 
         .loading-progress circle:last-child {
-                    stroke: #ff3b9d;
+                    stroke: #ff6a00;
             stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
             transition: stroke-dasharray 0.05s ease-in-out;
         }

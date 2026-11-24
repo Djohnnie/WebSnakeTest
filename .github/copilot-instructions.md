@@ -7,6 +7,6 @@
 
 ## Visual design
 
-* Give the game a polished, game-like interface with a dark background and pink as the primary interface color.
+* Give the game a polished, game-like interface with a dark background and neon orange as the primary interface color.
 * Render the snake in green and the food in blue, keeping both clearly distinguishable from the board and background.
 * Keep text, controls, and game elements readable and visually distinct against the dark theme.
