@@ -288,7 +288,11 @@ input:disabled {
 }
 
 .result-count {
-    color: #78717f;
+    padding: 5px 8px;
+    border: 1px solid #4c2c40;
+    border-radius: 999px;
+    color: #d38aaf;
+    background: #24131d;
     font-size: 0.62rem;
     font-weight: 800;
     letter-spacing: 0.08em;
@@ -329,10 +333,8 @@ input:disabled {
 }
 
 .leaderboard-list {
-    max-height: 255px;
     margin: 0;
     padding: 0;
-    overflow: auto;
     list-style: none;
 }
 

@@ -1,4 +1,6 @@
 using Bunit;
+using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.DependencyInjection;
 using WebSnake.Pages;
 
 namespace WebSnake.Tests;
@@ -52,5 +54,21 @@ public sealed class HomePageTests : BunitContext
         Assert.True(page.Find(".start-button").HasAttribute("disabled"));
         Assert.Contains("Name changed. Select Update before starting.", page.Markup);
         Assert.Equal("Alice", page.Find(".player-chip strong").TextContent);
+    }
+
+    [Fact]
+    public void DevelopmentLeaderboard_DisplaysTheTopTenPlayersAndSnakeLengths()
+    {
+        Services.GetRequiredService<NavigationManager>()
+            .NavigateTo("?demo=leaderboard");
+
+        var page = Render<Home>();
+        var entries = page.FindAll(".leaderboard-list li");
+
+        Assert.Equal(10, entries.Count);
+        Assert.Equal("Neon Viper", entries[0].QuerySelector(".leaderboard-player")!.TextContent);
+        Assert.Equal("42", entries[0].QuerySelector(".leaderboard-length strong")!.TextContent);
+        Assert.Equal("9", entries[8].QuerySelector(".rank")!.TextContent);
+        Assert.Equal("9", entries[9].QuerySelector(".rank")!.TextContent);
     }
 }
