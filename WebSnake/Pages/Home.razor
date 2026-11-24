@@ -54,6 +54,10 @@
                         {
                             <p class="feedback error">@_registrationError</p>
                         }
+                        else if (HasPendingPlayerName)
+                        {
+                            <p class="feedback warning">Name changed. Select Update before starting.</p>
+                        }
                         else if (_game.RegisteredPlayerName is not null)
                         {
                             <p class="feedback success"><span aria-hidden="true">✓</span> Registered as @_game.RegisteredPlayerName</p>
@@ -127,7 +131,7 @@
             }
 
             <div class="game-actions">
-                <button class="start-button" @onclick="StartGame" disabled="@_game.IsRunning">
+                <button class="start-button" @onclick="StartGame" disabled="@(_game.IsRunning || HasPendingPlayerName)">
                     @if (_game.IsRunning)
                     {
                         <span>RUN IN PROGRESS</span>
@@ -167,6 +171,13 @@
         ? $"Game in progress for {_game.ActivePlayerName}, score {_game.Score}"
         : "Snake game board";
 
+    private bool HasPendingPlayerName =>
+        _game.RegisteredPlayerName is not null &&
+        !string.Equals(
+            _playerName.Trim(),
+            _game.RegisteredPlayerName,
+            StringComparison.Ordinal);
+
     private void OnPlayerNameChanged(ChangeEventArgs args)
     {
         _playerName = args.Value?.ToString() ?? string.Empty;
@@ -188,6 +199,12 @@
 
     private async Task StartGame()
     {
+        if (HasPendingPlayerName)
+        {
+            _startError = "Update your registration before starting.";
+            return;
+        }
+
         if (!_game.TryStart())
         {
             _startError = "Register a valid player name before starting.";

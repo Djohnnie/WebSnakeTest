@@ -47,6 +47,12 @@ public sealed class SnakeGame
             return false;
         }
 
+        if (!name.Any(char.IsLetterOrDigit))
+        {
+            error = "Player names must include at least one letter or number.";
+            return false;
+        }
+
         RegisteredPlayerName = name;
         error = string.Empty;
         return true;

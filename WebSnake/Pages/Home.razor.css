@@ -242,6 +242,10 @@ input:disabled {
     color: #71e798;
 }
 
+.feedback.warning {
+    color: #ffc76a;
+}
+
 .how-to {
     display: flex;
     gap: 13px;

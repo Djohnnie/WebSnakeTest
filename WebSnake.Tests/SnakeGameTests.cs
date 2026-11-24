@@ -36,6 +36,8 @@ public sealed class SnakeGameTests
     [InlineData("A", "between 2 and 20")]
     [InlineData("ThisPlayerNameIsFarTooLong", "between 2 and 20")]
     [InlineData("Player!", "Use letters")]
+    [InlineData("--", "letter or number")]
+    [InlineData("''", "letter or number")]
     public void TryRegisterPlayer_WithInvalidName_ReturnsHelpfulError(string? name, string expected)
     {
         var game = new SnakeGame(new Random(7));
