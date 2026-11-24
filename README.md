@@ -5,7 +5,8 @@ tile board. Player names are validated and registered before a game can start.
 Use the arrow keys or on-screen controls to steer; each 130 ms tick moves the
 snake one tile and crossing an edge wraps it to the opposite side. Blue food
 spawns on an unoccupied tile. Eating it adds one segment, ten points, and causes
-a new piece of food to appear elsewhere on the board.
+a new piece of food to appear elsewhere on the board. Running into the snake's
+own body ends the game.
 
 ## Run
 
@@ -24,8 +25,8 @@ The runtime roll-forward is only needed on development machines where the .NET
 
 ## Capture media
 
-With the app running, capture a screenshot and demo of the snake eating food
-and growing using:
+With the app running, capture a screenshot and demo of the snake growing and
+colliding with itself using:
 
 ```bash
 BASE_URL=http://127.0.0.1:5067 \

@@ -75,6 +75,33 @@ public sealed class SnakeGameTests
         Assert.DoesNotContain(game.Food, game.Snake);
     }
 
+    [Fact]
+    public void Tick_WhenSnakeRunsIntoItsBody_EndsGame()
+    {
+        var game = new SnakeGame(new ScriptedRandom(0, 310, 310, 0));
+        Assert.True(game.TryRegisterPlayer("Neon Viper", out _));
+        Assert.True(game.TryStart());
+        Assert.True(game.Tick());
+        Assert.True(game.Tick());
+        Assert.Equal(5, game.Length);
+
+        Assert.True(game.Turn(Direction.Down));
+        Assert.True(game.Tick());
+        Assert.True(game.Turn(Direction.Left));
+        Assert.True(game.Tick());
+        Assert.True(game.Turn(Direction.Up));
+        var snakeBeforeCollision = game.Snake.ToArray();
+
+        Assert.True(game.Tick());
+
+        Assert.False(game.IsRunning);
+        Assert.True(game.IsGameOver);
+        Assert.Equal(GameEndReason.SelfCollision, game.EndReason);
+        Assert.Equal(snakeBeforeCollision, game.Snake);
+        Assert.False(game.Tick());
+        Assert.Equal(snakeBeforeCollision, game.Snake);
+    }
+
     [Theory]
     [InlineData(Direction.Right, 13, 0, 12)]
     [InlineData(Direction.Down, 13, 12, 0)]
