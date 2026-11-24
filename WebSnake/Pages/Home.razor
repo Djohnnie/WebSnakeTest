@@ -1,0 +1,246 @@
+﻿@page "/"
+@using WebSnake.Game
+@implements IDisposable
+
+<PageTitle>WebSnake</PageTitle>
+
+<div class="app-shell">
+    <header class="site-header">
+        <a class="brand" href="/" aria-label="WebSnake home">
+            <span class="brand-mark" aria-hidden="true">
+                <span></span><span></span><span></span><span></span>
+            </span>
+            <span>WEB<span>SNAKE</span></span>
+        </a>
+        <div class="mode-pill"><span></span> Arcade mode</div>
+    </header>
+
+    <main class="game-layout">
+        <section class="hero-copy">
+            <div>
+                <p class="eyebrow">Classic game. New high score.</p>
+                <h1>Stay sharp.<br /><span>Stay alive.</span></h1>
+                <p class="intro">Register your callsign, enter the grid, and chase the blue bites. Every move counts.</p>
+            </div>
+
+            <section class="registration-card" aria-labelledby="register-heading">
+                <div class="card-heading">
+                    <span class="step-number">01</span>
+                    <div>
+                        <p class="eyebrow">Player check-in</p>
+                        <h2 id="register-heading">Claim your name</h2>
+                    </div>
+                </div>
+
+                <form @onsubmit="RegisterPlayer" @onsubmit:preventDefault>
+                    <label for="player-name">Player name</label>
+                    <div class="input-row">
+                        <input id="player-name"
+                               class="@(_registrationError is not null ? "invalid" : null)"
+                               value="@_playerName"
+                               @oninput="OnPlayerNameChanged"
+                               placeholder="e.g. Neon Viper"
+                               maxlength="20"
+                               autocomplete="nickname"
+                               aria-describedby="name-help registration-feedback"
+                               disabled="@_game.IsRunning" />
+                        <button type="submit" class="register-button" disabled="@_game.IsRunning">
+                            @(_game.RegisteredPlayerName is null ? "Register" : "Update")
+                        </button>
+                    </div>
+                    <p id="name-help" class="field-help">2-20 characters. Your name will appear with this run.</p>
+                    <div id="registration-feedback" aria-live="polite">
+                        @if (_registrationError is not null)
+                        {
+                            <p class="feedback error">@_registrationError</p>
+                        }
+                        else if (_game.RegisteredPlayerName is not null)
+                        {
+                            <p class="feedback success"><span aria-hidden="true">✓</span> Registered as @_game.RegisteredPlayerName</p>
+                        }
+                    </div>
+                </form>
+            </section>
+
+            <div class="how-to">
+                <span class="key-hint">↑</span>
+                <div><strong>Move with arrow keys</strong><small>or use the controls beside the board</small></div>
+            </div>
+        </section>
+
+        <section class="console-card" aria-label="Snake game">
+            <div class="console-top">
+                <div class="live-state">
+                    <span class="@(_game.IsRunning ? "pulse live" : "pulse")"></span>
+                    @(_game.IsRunning ? "Game live" : _game.IsGameOver ? "Run complete" : "Waiting for player")
+                </div>
+                <div class="player-chip">
+                    <span>PLAYER</span>
+                    <strong>@(_game.ActivePlayerName ?? _game.RegisteredPlayerName ?? "Unregistered")</strong>
+                </div>
+            </div>
+
+            <div class="score-row">
+                <div class="score-block"><span>Score</span><strong>@_game.Score.ToString("D4")</strong></div>
+                <div class="score-block align-right"><span>Grid</span><strong>20 × 20</strong></div>
+            </div>
+
+            <div class="board-wrap" @ref="_board" tabindex="0" @onkeydown="HandleKeyDown">
+                <div class="board" aria-label="@BoardLabel">
+                    @for (var index = 0; index < _game.Snake.Count; index++)
+                    {
+                        var segment = _game.Snake[index];
+                        <span class="snake-segment @(index == 0 ? "snake-head" : null)"
+                              style="@PositionStyle(segment)"
+                              aria-hidden="true"></span>
+                    }
+                    <span class="food" style="@PositionStyle(_game.Food)" aria-hidden="true"></span>
+                    <div class="board-sheen"></div>
+                </div>
+
+                @if (!_game.IsRunning)
+                {
+                    <div class="board-overlay">
+                        <div class="overlay-icon">@(_game.IsGameOver ? "↻" : "▶")</div>
+                        @if (_game.IsGameOver)
+                        {
+                            <h2>Run complete</h2>
+                            <p>@_game.ActivePlayerName scored <strong>@_game.Score</strong> points.</p>
+                        }
+                        else if (_game.RegisteredPlayerName is not null)
+                        {
+                            <h2>Ready, @_game.RegisteredPlayerName?</h2>
+                            <p>Your name is locked in. Enter the grid.</p>
+                        }
+                        else
+                        {
+                            <h2>Register to enter</h2>
+                            <p>Every legend starts with a name.</p>
+                        }
+                    </div>
+                }
+            </div>
+
+            @if (_startError is not null)
+            {
+                <p class="start-error" role="alert">@_startError</p>
+            }
+
+            <div class="game-actions">
+                <button class="start-button" @onclick="StartGame" disabled="@_game.IsRunning">
+                    @if (_game.IsRunning)
+                    {
+                        <span>RUN IN PROGRESS</span>
+                    }
+                    else
+                    {
+                        <span class="play-symbol">▶</span>
+                        <span>@(_game.IsGameOver ? "PLAY AGAIN" : "START GAME")</span>
+                    }
+                </button>
+                <div class="direction-pad" aria-label="Movement controls">
+                    <button @onclick="() => Turn(Direction.Up)" aria-label="Move up">↑</button>
+                    <button @onclick="() => Turn(Direction.Left)" aria-label="Move left">←</button>
+                    <button @onclick="() => Turn(Direction.Down)" aria-label="Move down">↓</button>
+                    <button @onclick="() => Turn(Direction.Right)" aria-label="Move right">→</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <span>NO DOWNLOADS. JUST SNAKE.</span>
+        <span class="footer-rule"></span>
+        <span>BUILT FOR THE LEADERBOARD</span>
+    </footer>
+</div>
+
+@code {
+    private readonly SnakeGame _game = new();
+    private ElementReference _board;
+    private Timer? _timer;
+    private string _playerName = string.Empty;
+    private string? _registrationError;
+    private string? _startError;
+
+    private string BoardLabel => _game.IsRunning
+        ? $"Game in progress for {_game.ActivePlayerName}, score {_game.Score}"
+        : "Snake game board";
+
+    private void OnPlayerNameChanged(ChangeEventArgs args)
+    {
+        _playerName = args.Value?.ToString() ?? string.Empty;
+        _registrationError = null;
+    }
+
+    private void RegisterPlayer()
+    {
+        if (_game.TryRegisterPlayer(_playerName, out var error))
+        {
+            _registrationError = null;
+            _startError = null;
+            _playerName = _game.RegisteredPlayerName!;
+            return;
+        }
+
+        _registrationError = error;
+    }
+
+    private async Task StartGame()
+    {
+        if (!_game.TryStart())
+        {
+            _startError = "Register a valid player name before starting.";
+            return;
+        }
+
+        _startError = null;
+        _timer?.Dispose();
+        _timer = new Timer(_ => _ = AdvanceGame(), null, 130, 130);
+        await _board.FocusAsync();
+    }
+
+    private async Task AdvanceGame()
+    {
+        await InvokeAsync(() =>
+        {
+            if (_game.Tick())
+            {
+                StateHasChanged();
+            }
+
+            if (!_game.IsRunning)
+            {
+                _timer?.Dispose();
+                _timer = null;
+            }
+        });
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs args)
+    {
+        var direction = args.Key switch
+        {
+            "ArrowUp" => Direction.Up,
+            "ArrowRight" => Direction.Right,
+            "ArrowDown" => Direction.Down,
+            "ArrowLeft" => Direction.Left,
+            _ => (Direction?)null
+        };
+
+        if (direction is not null)
+        {
+            Turn(direction.Value);
+        }
+    }
+
+    private void Turn(Direction direction) => _game.Turn(direction);
+
+    private static string PositionStyle(GridPoint point) =>
+        $"left: {point.X * 5}%; top: {point.Y * 5}%;";
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+}
