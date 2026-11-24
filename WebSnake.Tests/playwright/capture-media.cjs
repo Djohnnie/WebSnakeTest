@@ -204,7 +204,10 @@ async function captureScreenshot(browser) {
         viewport: { width: 1280, height: 900 }
     });
     const page = await context.newPage();
-    await page.goto(`${baseUrl}/?demo=leaderboard`, { waitUntil: "networkidle" });
+    await page.goto(baseUrl, { waitUntil: "networkidle" });
+    await registerAndStart(page);
+    await growSnake(page, 5);
+    await collideWithSelf(page);
     await page.locator(".leaderboard-card").scrollIntoViewIfNeeded();
     await page.waitForTimeout(500);
     await page.screenshot({
@@ -235,9 +238,9 @@ async function captureDemo(browser) {
     });
     await context.addInitScript({ path: overlayPath });
     const page = await context.newPage();
-    await page.goto(`${baseUrl}/?demo=leaderboard`, { waitUntil: "networkidle" });
+    await page.goto(baseUrl, { waitUntil: "networkidle" });
     await page.locator(".leaderboard-card").scrollIntoViewIfNeeded();
-    await page.evaluate(text => window.dghsfCaption(text), "Consult the top 10 before a game");
+    await page.evaluate(text => window.dghsfCaption(text), "Consult the leaderboard before a game");
     await page.waitForTimeout(1400);
     await registerAndStart(page);
     await page.locator(".console-card").scrollIntoViewIfNeeded();

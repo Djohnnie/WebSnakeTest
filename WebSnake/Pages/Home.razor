@@ -1,6 +1,6 @@
 ﻿@page "/"
 @using WebSnake.Game
-@inject NavigationManager Navigation
+@inject Leaderboard Leaderboard
 @implements IDisposable
 
 <PageTitle>WebSnake</PageTitle>
@@ -217,8 +217,7 @@
 </div>
 
 @code {
-    private readonly Leaderboard _leaderboard = new();
-    private readonly SnakeGame _game;
+    private SnakeGame _game = null!;
     private ElementReference _board;
     private Timer? _timer;
     private string _playerName = string.Empty;
@@ -226,16 +225,9 @@
     private string? _startError;
     private string _resultLabel => _game.LeaderboardEntries.Count == 1 ? "result" : "results";
 
-    public Home()
-    {
-        _game = new SnakeGame(leaderboard: _leaderboard);
-    }
-
     protected override void OnInitialized()
     {
-#if DEBUG
-        LeaderboardDemoData.SeedWhenRequested(_leaderboard, Navigation.Uri);
-#endif
+        _game = new SnakeGame(leaderboard: Leaderboard);
     }
 
     private string BoardLabel =>

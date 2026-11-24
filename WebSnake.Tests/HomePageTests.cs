@@ -1,12 +1,17 @@
 using Bunit;
-using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
+using WebSnake.Game;
 using WebSnake.Pages;
 
 namespace WebSnake.Tests;
 
 public sealed class HomePageTests : BunitContext
 {
+    public HomePageTests()
+    {
+        Services.AddSingleton(new Leaderboard());
+    }
+
     [Fact]
     public void NewGame_DisplaysStandardTwentyFiveByTwentyFiveGrid()
     {
@@ -57,10 +62,29 @@ public sealed class HomePageTests : BunitContext
     }
 
     [Fact]
-    public void DevelopmentLeaderboard_DisplaysTheTopTenPlayersAndSnakeLengths()
+    public void Leaderboard_DisplaysTheTopTenPlayersAndSnakeLengths()
     {
-        Services.GetRequiredService<NavigationManager>()
-            .NavigateTo("?demo=leaderboard");
+        var leaderboard = Services.GetRequiredService<Leaderboard>();
+        var seededEntries = new (string PlayerName, int SnakeLength)[]
+        {
+            ("Neon Viper", 42),
+            ("Pixel Fox", 38),
+            ("Byte Rider", 34),
+            ("Luna Loop", 31),
+            ("Arcade Ace", 29),
+            ("Pink Cobra", 26),
+            ("Grid Ghost", 22),
+            ("Coil Kid", 19),
+            ("Nova Noodle", 16),
+            ("Snack Jack", 16),
+            ("Blue Circuit", 14),
+            ("Tiny Python", 12)
+        };
+
+        foreach (var entry in seededEntries)
+        {
+            leaderboard.Add(entry.PlayerName, entry.SnakeLength);
+        }
 
         var page = Render<Home>();
         var entries = page.FindAll(".leaderboard-list li");

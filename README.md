@@ -29,8 +29,7 @@ The runtime roll-forward is only needed on development machines where the .NET
 ## Capture media
 
 With the app running, capture a screenshot and demo of the snake growing,
-colliding with itself, and appearing on the leaderboard using the
-development-only `?demo=leaderboard` fixture:
+colliding with itself, and appearing on the leaderboard:
 
 ```bash
 BASE_URL=http://127.0.0.1:5067 \

@@ -29,38 +29,3 @@ public sealed class Leaderboard
 }
 
 public sealed record LeaderboardEntry(string PlayerName, int SnakeLength);
-
-#if DEBUG
-public static class LeaderboardDemoData
-{
-    public static void SeedWhenRequested(Leaderboard leaderboard, string uri)
-    {
-        if (!uri.Contains("?demo=leaderboard", StringComparison.OrdinalIgnoreCase) &&
-            !uri.Contains("&demo=leaderboard", StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        foreach (var entry in SampleEntries)
-        {
-            leaderboard.Add(entry.PlayerName, entry.SnakeLength);
-        }
-    }
-
-    private static readonly LeaderboardEntry[] SampleEntries =
-    [
-        new("Neon Viper", 42),
-        new("Pixel Fox", 38),
-        new("Byte Rider", 34),
-        new("Luna Loop", 31),
-        new("Arcade Ace", 29),
-        new("Pink Cobra", 26),
-        new("Grid Ghost", 22),
-        new("Coil Kid", 19),
-        new("Nova Noodle", 16),
-        new("Snack Jack", 16),
-        new("Blue Circuit", 14),
-        new("Tiny Python", 12)
-    ];
-}
-#endif
