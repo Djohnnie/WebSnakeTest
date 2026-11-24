@@ -261,6 +261,131 @@ input:disabled {
     color: #68636f;
 }
 
+.leaderboard-card {
+    margin-top: 18px;
+    overflow: hidden;
+    border: 1px solid #302b37;
+    border-radius: 15px;
+    background: rgba(18, 16, 23, 0.86);
+}
+
+.leaderboard-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 17px 19px 14px;
+    border-bottom: 1px solid #29252f;
+}
+
+.leaderboard-heading .eyebrow {
+    margin-bottom: 3px;
+    font-size: 0.55rem;
+}
+
+.leaderboard-heading h2 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.result-count {
+    color: #78717f;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.leaderboard-empty {
+    display: flex;
+    gap: 13px;
+    align-items: center;
+    padding: 18px 19px;
+}
+
+.leaderboard-empty > span {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px dashed #4b3341;
+    border-radius: 9px;
+    color: #78405f;
+    font-family: "Courier New", monospace;
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.leaderboard-empty p {
+    margin: 0;
+    color: #77717e;
+    font-size: 0.72rem;
+    line-height: 1.5;
+}
+
+.leaderboard-empty strong {
+    display: block;
+    color: #d8d2de;
+}
+
+.leaderboard-list {
+    max-height: 255px;
+    margin: 0;
+    padding: 0;
+    overflow: auto;
+    list-style: none;
+}
+
+.leaderboard-list li {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    padding: 12px 19px;
+    border-top: 1px solid #25212b;
+}
+
+.leaderboard-list li:first-child {
+    border-top: 0;
+}
+
+.leaderboard-list .leader {
+    background: linear-gradient(90deg, rgba(255, 59, 157, 0.09), transparent);
+}
+
+.rank {
+    color: #716a78;
+    font-family: "Courier New", monospace;
+    font-size: 0.7rem;
+    font-weight: 800;
+}
+
+.leader .rank {
+    color: #ff4da7;
+}
+
+.leaderboard-player {
+    overflow: hidden;
+    color: #e8e3ec;
+    font-size: 0.78rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.leaderboard-length {
+    color: #77717f;
+    font-size: 0.62rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.leaderboard-length strong {
+    margin-right: 3px;
+    color: #78e59a;
+    font-family: "Courier New", monospace;
+    font-size: 0.82rem;
+}
+
 .key-hint {
     display: grid;
     width: 34px;

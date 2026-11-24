@@ -108,7 +108,41 @@ async function growSnake(page, targetLength) {
 }
 
 async function collideWithSelf(page) {
-    await page.evaluate(() => {
+    const move = async turn => {
+        const expectedPosition = await page.evaluate(turn => {
+            const coordinate = element => ({
+                x: Math.round(Number.parseFloat(element.style.left) / 4),
+                y: Math.round(Number.parseFloat(element.style.top) / 4)
+            });
+            const head = coordinate(document.querySelector(".snake-head"));
+            const delta = {
+                Up: { x: 0, y: -1 },
+                Right: { x: 1, y: 0 },
+                Down: { x: 0, y: 1 },
+                Left: { x: -1, y: 0 }
+            }[turn];
+            document.querySelector(".board-wrap").dispatchEvent(
+                new KeyboardEvent("keydown", { key: `Arrow${turn}`, bubbles: true }));
+            return {
+                left: `${((head.x + delta.x + 25) % 25) * 4}%`,
+                top: `${((head.y + delta.y + 25) % 25) * 4}%`
+            };
+        }, turn);
+
+        await page.waitForFunction(
+            expected => {
+                const console = document.querySelector(".console-card");
+                const head = document.querySelector(".snake-head");
+                return console?.dataset.gameState === "over" ||
+                    (head?.style.left === expected.left &&
+                     head?.style.top === expected.top);
+            },
+            expectedPosition,
+            { timeout: 1200 });
+    };
+
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+        await page.evaluate(() => {
         const coordinate = element => ({
             x: Math.round(Number.parseFloat(element.style.left) / 4),
             y: Math.round(Number.parseFloat(element.style.top) / 4)
@@ -146,30 +180,23 @@ async function collideWithSelf(page) {
             opposite[direction],
             counterClockwise[direction]
         ];
-    });
+        });
 
-    const turns = await page.evaluate(() => window.selfCollisionTurns);
-    await page.locator(".board-wrap").focus();
-    for (const turn of turns.slice(0, 2)) {
-        const before = await page.locator(".snake-head").evaluate(
-            element => [element.style.left, element.style.top]);
-        await page.keyboard.press(`Arrow${turn}`);
-        await page.waitForFunction(
-            previousPosition => {
-                const head = document.querySelector(".snake-head");
-                return head &&
-                    (head.style.left !== previousPosition[0] ||
-                     head.style.top !== previousPosition[1]);
-            },
-            before);
+        const turns = await page.evaluate(() => window.selfCollisionTurns);
+        for (const turn of turns) {
+            await move(turn);
+            if (await page.locator(".console-card").getAttribute("data-game-state") === "over") {
+                break;
+            }
+        }
+
+        if (await page.locator(".console-card").getAttribute("data-game-state") === "over") {
+            await page.waitForTimeout(700);
+            return;
+        }
     }
 
-    await page.keyboard.press(`Arrow${turns[2]}`);
-    await page.waitForFunction(
-        () => document.querySelector(".console-card")?.dataset.gameState === "over",
-        null,
-        { timeout: 2000 });
-    await page.waitForTimeout(700);
+    throw new Error("Could not drive the snake into its body.");
 }
 
 async function captureScreenshot(browser) {
@@ -182,9 +209,10 @@ async function captureScreenshot(browser) {
     await growSnake(page, 5);
     await collideWithSelf(page);
     await page.locator(".console-card").scrollIntoViewIfNeeded();
+    await page.locator(".leaderboard-card").scrollIntoViewIfNeeded();
     await page.waitForTimeout(500);
     await page.screenshot({
-        path: path.join(screenshotDirectory, "snake-self-collision.png")
+        path: path.join(screenshotDirectory, "snake-leaderboard-result.png")
     });
     await context.close();
 }
@@ -217,14 +245,15 @@ async function captureDemo(browser) {
     await growSnake(page, 5);
     await page.evaluate(text => window.dghsfCaption(text), "Turn across the snake's own trail");
     await collideWithSelf(page);
-    await page.evaluate(text => window.dghsfCaption(text), "Self-collision ends the run");
+    await page.locator(".leaderboard-card").scrollIntoViewIfNeeded();
+    await page.evaluate(text => window.dghsfCaption(text), "Result is ranked with the final length");
     await page.waitForTimeout(1300);
 
     const recordedPath = await page.video().path();
     await context.close();
     await fs.copyFile(
         recordedPath,
-        path.join(demoDirectory, "snake-self-collision-demo.webm"));
+        path.join(demoDirectory, "snake-leaderboard-demo.webm"));
 }
 
 async function main() {

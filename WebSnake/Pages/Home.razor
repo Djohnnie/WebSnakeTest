@@ -70,6 +70,40 @@
                 <span class="key-hint">↑</span>
                 <div><strong>Move with arrow keys</strong><small>or use the controls beside the board</small></div>
             </div>
+
+            <section class="leaderboard-card" aria-labelledby="leaderboard-heading">
+                <div class="leaderboard-heading">
+                    <div>
+                        <p class="eyebrow">Hall of fame</p>
+                        <h2 id="leaderboard-heading">Leaderboard</h2>
+                    </div>
+                    <span class="result-count">@_game.LeaderboardEntries.Count @_resultLabel</span>
+                </div>
+
+                @if (_game.LeaderboardEntries.Count == 0)
+                {
+                    <div class="leaderboard-empty">
+                        <span aria-hidden="true">#1</span>
+                        <p><strong>The board is open.</strong> Finish a run to claim the first rank.</p>
+                    </div>
+                }
+                else
+                {
+                    <ol class="leaderboard-list">
+                        @for (var index = 0; index < _game.LeaderboardEntries.Count; index++)
+                        {
+                            var entry = _game.LeaderboardEntries[index];
+                            <li class="@(index == 0 ? "leader" : null)">
+                                <span class="rank">@(index + 1)</span>
+                                <strong class="leaderboard-player">@entry.PlayerName</strong>
+                                <span class="leaderboard-length">
+                                    <strong>@entry.SnakeLength.ToString("D2")</strong> length
+                                </span>
+                            </li>
+                        }
+                    </ol>
+                }
+            </section>
         </section>
 
         <section class="console-card"
@@ -118,12 +152,12 @@
                             if (_game.EndReason == GameEndReason.SelfCollision)
                             {
                                 <h2>Snake down</h2>
-                                <p>@_game.ActivePlayerName hit the snake's own trail and scored <strong>@_game.Score</strong> points.</p>
+                                <p>@_game.ActivePlayerName hit the snake's own trail at length <strong>@_game.Length</strong>. Result ranked!</p>
                             }
                             else
                             {
                                 <h2>Grid cleared</h2>
-                                <p>@_game.ActivePlayerName filled the board with <strong>@_game.Score</strong> points.</p>
+                                <p>@_game.ActivePlayerName filled the board at length <strong>@_game.Length</strong>. Result ranked!</p>
                             }
                         }
                         else if (_game.RegisteredPlayerName is not null)
@@ -181,6 +215,7 @@
     private string _playerName = string.Empty;
     private string? _registrationError;
     private string? _startError;
+    private string _resultLabel => _game.LeaderboardEntries.Count == 1 ? "result" : "results";
 
     private string BoardLabel =>
         _game.IsRunning

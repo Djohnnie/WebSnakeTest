@@ -78,7 +78,8 @@ public sealed class SnakeGameTests
     [Fact]
     public void Tick_WhenSnakeRunsIntoItsBody_EndsGame()
     {
-        var game = new SnakeGame(new ScriptedRandom(0, 310, 310, 0));
+        var leaderboard = new Leaderboard();
+        var game = new SnakeGame(new ScriptedRandom(0, 310, 310, 0), leaderboard);
         Assert.True(game.TryRegisterPlayer("Neon Viper", out _));
         Assert.True(game.TryStart());
         Assert.True(game.Tick());
@@ -98,8 +99,54 @@ public sealed class SnakeGameTests
         Assert.True(game.IsGameOver);
         Assert.Equal(GameEndReason.SelfCollision, game.EndReason);
         Assert.Equal(snakeBeforeCollision, game.Snake);
+        var result = Assert.Single(leaderboard.Entries);
+        Assert.Equal("Neon Viper", result.PlayerName);
+        Assert.Equal(snakeBeforeCollision.Length, result.SnakeLength);
         Assert.False(game.Tick());
         Assert.Equal(snakeBeforeCollision, game.Snake);
+        Assert.Single(leaderboard.Entries);
+    }
+
+    [Fact]
+    public void TryStart_AfterCompletedGame_AddsAnotherResultAndKeepsPreviousRank()
+    {
+        var leaderboard = new Leaderboard();
+        var firstGame = new SnakeGame(new ScriptedRandom(0, 310, 310, 0, 0), leaderboard);
+        Assert.True(firstGame.TryRegisterPlayer("Neon Viper", out _));
+        Assert.True(firstGame.TryStart());
+
+        Assert.True(firstGame.Tick());
+        Assert.True(firstGame.Tick());
+        Assert.True(firstGame.Turn(Direction.Down));
+        Assert.True(firstGame.Tick());
+        Assert.True(firstGame.Turn(Direction.Left));
+        Assert.True(firstGame.Tick());
+        Assert.True(firstGame.Turn(Direction.Up));
+        Assert.True(firstGame.Tick());
+
+        Assert.True(firstGame.TryRegisterPlayer("Pixel Fox", out _));
+        Assert.True(firstGame.TryStart());
+
+        var entry = Assert.Single(leaderboard.Entries);
+        Assert.Equal("Neon Viper", entry.PlayerName);
+        Assert.Equal(5, entry.SnakeLength);
+        Assert.True(firstGame.IsRunning);
+    }
+
+    [Fact]
+    public void Leaderboard_RanksEntriesBySnakeLength()
+    {
+        var leaderboard = new Leaderboard();
+
+        leaderboard.Add("Neon Viper", 5);
+        leaderboard.Add("Pixel Fox", 12);
+        leaderboard.Add("Byte Rider", 8);
+
+        Assert.Collection(
+            leaderboard.Entries,
+            entry => Assert.Equal(("Pixel Fox", 12), (entry.PlayerName, entry.SnakeLength)),
+            entry => Assert.Equal(("Byte Rider", 8), (entry.PlayerName, entry.SnakeLength)),
+            entry => Assert.Equal(("Neon Viper", 5), (entry.PlayerName, entry.SnakeLength)));
     }
 
     [Theory]
