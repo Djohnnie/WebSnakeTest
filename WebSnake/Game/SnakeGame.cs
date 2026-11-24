@@ -12,7 +12,8 @@ public sealed class SnakeGame
         ResetBoard();
     }
 
-    public const int BoardSize = 20;
+    public const int BoardSize = 25;
+    public const int TickIntervalMilliseconds = 130;
 
     public string? RegisteredPlayerName { get; private set; }
     public string? ActivePlayerName { get; private set; }
@@ -102,14 +103,11 @@ public sealed class SnakeGame
             _ => head
         };
 
+        nextHead = Wrap(nextHead);
         var ateFood = nextHead == Food;
         var collisionBody = ateFood ? _snake : _snake.Take(_snake.Count - 1);
 
-        if (nextHead.X < 0 ||
-            nextHead.X >= BoardSize ||
-            nextHead.Y < 0 ||
-            nextHead.Y >= BoardSize ||
-            collisionBody.Contains(nextHead))
+        if (collisionBody.Contains(nextHead))
         {
             EndGame();
             return true;
@@ -129,6 +127,11 @@ public sealed class SnakeGame
 
         return true;
     }
+
+    private static GridPoint Wrap(GridPoint point) =>
+        new(
+            (point.X + BoardSize) % BoardSize,
+            (point.Y + BoardSize) % BoardSize);
 
     private void ResetBoard()
     {

@@ -6,6 +6,14 @@ namespace WebSnake.Tests;
 public sealed class HomePageTests : BunitContext
 {
     [Fact]
+    public void NewGame_DisplaysStandardTwentyFiveByTwentyFiveGrid()
+    {
+        var page = Render<Home>();
+
+        Assert.Equal("25 × 25", page.Find(".score-block.align-right strong").TextContent);
+    }
+
+    [Fact]
     public void StartWithoutRegistration_ShowsErrorAndKeepsGameStopped()
     {
         var page = Render<Home>();
