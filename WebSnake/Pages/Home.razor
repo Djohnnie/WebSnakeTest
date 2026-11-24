@@ -86,7 +86,7 @@
 
             <div class="score-row">
                 <div class="score-block"><span>Score</span><strong>@_game.Score.ToString("D4")</strong></div>
-                <div class="score-block align-right"><span>Grid</span><strong>20 × 20</strong></div>
+                <div class="score-block align-right"><span>Grid</span><strong>@SnakeGame.BoardSize × @SnakeGame.BoardSize</strong></div>
             </div>
 
             <div class="board-wrap" @ref="_board" tabindex="0" @onkeydown="HandleKeyDown">
@@ -213,7 +213,11 @@
 
         _startError = null;
         _timer?.Dispose();
-        _timer = new Timer(_ => _ = AdvanceGame(), null, 130, 130);
+        _timer = new Timer(
+            _ => _ = AdvanceGame(),
+            null,
+            SnakeGame.TickIntervalMilliseconds,
+            SnakeGame.TickIntervalMilliseconds);
         await _board.FocusAsync();
     }
 
@@ -254,7 +258,8 @@
     private void Turn(Direction direction) => _game.Turn(direction);
 
     private static string PositionStyle(GridPoint point) =>
-        $"left: {point.X * 5}%; top: {point.Y * 5}%;";
+        FormattableString.Invariant(
+            $"left: {point.X * 100d / SnakeGame.BoardSize:0.###}%; top: {point.Y * 100d / SnakeGame.BoardSize:0.###}%;");
 
     public void Dispose()
     {
