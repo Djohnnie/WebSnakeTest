@@ -208,11 +208,11 @@ async function captureScreenshot(browser) {
     await registerAndStart(page);
     await growSnake(page, 5);
     await collideWithSelf(page);
-    await page.locator(".console-card").scrollIntoViewIfNeeded();
     await page.locator(".leaderboard-card").scrollIntoViewIfNeeded();
     await page.waitForTimeout(500);
     await page.screenshot({
-        path: path.join(screenshotDirectory, "snake-leaderboard-result.png")
+        path: path.join(screenshotDirectory, "snake-leaderboard-result.png"),
+        fullPage: true
     });
     await context.close();
 }
@@ -239,6 +239,9 @@ async function captureDemo(browser) {
     await context.addInitScript({ path: overlayPath });
     const page = await context.newPage();
     await page.goto(baseUrl, { waitUntil: "networkidle" });
+    await page.locator(".leaderboard-card").scrollIntoViewIfNeeded();
+    await page.evaluate(text => window.dghsfCaption(text), "Consult the leaderboard before a game");
+    await page.waitForTimeout(1400);
     await registerAndStart(page);
     await page.locator(".console-card").scrollIntoViewIfNeeded();
     await page.evaluate(text => window.dghsfCaption(text), "Grow the snake by chasing blue food");

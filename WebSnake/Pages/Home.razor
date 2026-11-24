@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using WebSnake.Game
+@inject Leaderboard Leaderboard
 @implements IDisposable
 
 <PageTitle>WebSnake</PageTitle>
@@ -74,7 +75,7 @@
             <section class="leaderboard-card" aria-labelledby="leaderboard-heading">
                 <div class="leaderboard-heading">
                     <div>
-                        <p class="eyebrow">Hall of fame</p>
+                        <p class="eyebrow">Top 10 hall of fame</p>
                         <h2 id="leaderboard-heading">Leaderboard</h2>
                     </div>
                     <span class="result-count">@_game.LeaderboardEntries.Count @_resultLabel</span>
@@ -90,11 +91,18 @@
                 else
                 {
                     <ol class="leaderboard-list">
+                        @{ var rank = 1; }
                         @for (var index = 0; index < _game.LeaderboardEntries.Count; index++)
                         {
                             var entry = _game.LeaderboardEntries[index];
-                            <li class="@(index == 0 ? "leader" : null)">
-                                <span class="rank">@(index + 1)</span>
+                            if (index > 0 &&
+                                entry.SnakeLength < _game.LeaderboardEntries[index - 1].SnakeLength)
+                            {
+                                rank = index + 1;
+                            }
+
+                            <li class="@(rank == 1 ? "leader" : null)">
+                                <span class="rank">@rank</span>
                                 <strong class="leaderboard-player">@entry.PlayerName</strong>
                                 <span class="leaderboard-length">
                                     <strong>@entry.SnakeLength.ToString("D2")</strong> length
@@ -209,13 +217,18 @@
 </div>
 
 @code {
-    private readonly SnakeGame _game = new();
+    private SnakeGame _game = null!;
     private ElementReference _board;
     private Timer? _timer;
     private string _playerName = string.Empty;
     private string? _registrationError;
     private string? _startError;
     private string _resultLabel => _game.LeaderboardEntries.Count == 1 ? "result" : "results";
+
+    protected override void OnInitialized()
+    {
+        _game = new SnakeGame(leaderboard: Leaderboard);
+    }
 
     private string BoardLabel =>
         _game.IsRunning

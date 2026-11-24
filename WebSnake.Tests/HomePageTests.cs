@@ -1,10 +1,17 @@
 using Bunit;
+using Microsoft.Extensions.DependencyInjection;
+using WebSnake.Game;
 using WebSnake.Pages;
 
 namespace WebSnake.Tests;
 
 public sealed class HomePageTests : BunitContext
 {
+    public HomePageTests()
+    {
+        Services.AddSingleton(new Leaderboard());
+    }
+
     [Fact]
     public void NewGame_DisplaysStandardTwentyFiveByTwentyFiveGrid()
     {
@@ -52,5 +59,40 @@ public sealed class HomePageTests : BunitContext
         Assert.True(page.Find(".start-button").HasAttribute("disabled"));
         Assert.Contains("Name changed. Select Update before starting.", page.Markup);
         Assert.Equal("Alice", page.Find(".player-chip strong").TextContent);
+    }
+
+    [Fact]
+    public void Leaderboard_DisplaysTheTopTenPlayersAndSnakeLengths()
+    {
+        var leaderboard = Services.GetRequiredService<Leaderboard>();
+        var seededEntries = new (string PlayerName, int SnakeLength)[]
+        {
+            ("Neon Viper", 42),
+            ("Pixel Fox", 38),
+            ("Byte Rider", 34),
+            ("Luna Loop", 31),
+            ("Arcade Ace", 29),
+            ("Pink Cobra", 26),
+            ("Grid Ghost", 22),
+            ("Coil Kid", 19),
+            ("Nova Noodle", 16),
+            ("Snack Jack", 16),
+            ("Blue Circuit", 14),
+            ("Tiny Python", 12)
+        };
+
+        foreach (var entry in seededEntries)
+        {
+            leaderboard.Add(entry.PlayerName, entry.SnakeLength);
+        }
+
+        var page = Render<Home>();
+        var entries = page.FindAll(".leaderboard-list li");
+
+        Assert.Equal(10, entries.Count);
+        Assert.Equal("Neon Viper", entries[0].QuerySelector(".leaderboard-player")!.TextContent);
+        Assert.Equal("42", entries[0].QuerySelector(".leaderboard-length strong")!.TextContent);
+        Assert.Equal("9", entries[8].QuerySelector(".rank")!.TextContent);
+        Assert.Equal("9", entries[9].QuerySelector(".rank")!.TextContent);
     }
 }

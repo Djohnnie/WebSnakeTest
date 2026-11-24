@@ -149,6 +149,36 @@ public sealed class SnakeGameTests
             entry => Assert.Equal(("Neon Viper", 5), (entry.PlayerName, entry.SnakeLength)));
     }
 
+    [Fact]
+    public void Leaderboard_KeepsOnlyTheTenHighestScores()
+    {
+        var leaderboard = new Leaderboard();
+
+        for (var score = 3; score <= 14; score++)
+        {
+            leaderboard.Add($"Player {score}", score);
+        }
+
+        Assert.Equal(Leaderboard.MaximumEntries, leaderboard.Entries.Count);
+        Assert.Equal(14, leaderboard.Entries[0].SnakeLength);
+        Assert.Equal(5, leaderboard.Entries[^1].SnakeLength);
+        Assert.All(leaderboard.Entries, entry => Assert.InRange(entry.SnakeLength, 5, 14));
+    }
+
+    [Fact]
+    public void Leaderboard_TiedScoresKeepResultOrder()
+    {
+        var leaderboard = new Leaderboard();
+
+        leaderboard.Add("First Finisher", 12);
+        leaderboard.Add("Second Finisher", 12);
+        leaderboard.Add("Third Finisher", 11);
+
+        Assert.Equal(
+            ["First Finisher", "Second Finisher", "Third Finisher"],
+            leaderboard.Entries.Select(entry => entry.PlayerName));
+    }
+
     [Theory]
     [InlineData(Direction.Right, 13, 0, 12)]
     [InlineData(Direction.Down, 13, 12, 0)]
