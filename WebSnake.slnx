@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="WebSnake.Tests/WebSnake.Tests.csproj" />
+  <Project Path="WebSnake/WebSnake.csproj" />
+</Solution>
