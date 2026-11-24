@@ -19,6 +19,7 @@ public sealed class SnakeGame
     public string? ActivePlayerName { get; private set; }
     public IReadOnlyList<GridPoint> Snake => _snake;
     public GridPoint Food { get; private set; }
+    public int Length => _snake.Count;
     public int Score { get; private set; }
     public bool IsRunning { get; private set; }
     public bool IsGameOver { get; private set; }

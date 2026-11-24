@@ -86,6 +86,7 @@
 
             <div class="score-row">
                 <div class="score-block"><span>Score</span><strong>@_game.Score.ToString("D4")</strong></div>
+                <div class="score-block align-center"><span>Length</span><strong>@_game.Length.ToString("D2")</strong></div>
                 <div class="score-block align-right"><span>Grid</span><strong>@SnakeGame.BoardSize × @SnakeGame.BoardSize</strong></div>
             </div>
 
@@ -98,7 +99,10 @@
                               style="@PositionStyle(segment)"
                               aria-hidden="true"></span>
                     }
-                    <span class="food" style="@PositionStyle(_game.Food)" aria-hidden="true"></span>
+                    <span class="food"
+                          style="@PositionStyle(_game.Food)"
+                          role="img"
+                          aria-label="@FoodLabel"></span>
                     <div class="board-sheen"></div>
                 </div>
 
@@ -168,8 +172,11 @@
     private string? _startError;
 
     private string BoardLabel => _game.IsRunning
-        ? $"Game in progress for {_game.ActivePlayerName}, score {_game.Score}"
+        ? $"Game in progress for {_game.ActivePlayerName}, score {_game.Score}, snake length {_game.Length}"
         : "Snake game board";
+
+    private string FoodLabel =>
+        $"Blue food at column {_game.Food.X + 1}, row {_game.Food.Y + 1}";
 
     private bool HasPendingPlayerName =>
         _game.RegisteredPlayerName is not null &&

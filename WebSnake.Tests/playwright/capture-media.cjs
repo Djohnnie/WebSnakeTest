@@ -4,9 +4,9 @@ const { chromium } = require("playwright");
 
 const baseUrl = process.env.BASE_URL || "http://127.0.0.1:5067";
 const screenshotDirectory = process.env.SCREENSHOT_DIR ||
-    "/tmp/dghsf-agent-worker/d5e266221a084394b219d94201ff1a33/screenshots";
+    "/tmp/dghsf-agent-worker/27cbd8d246154775a3de3f8205582993/screenshots";
 const demoDirectory = process.env.DEMO_DIR ||
-    "/tmp/dghsf-agent-worker/d5e266221a084394b219d94201ff1a33/demos";
+    "/tmp/dghsf-agent-worker/27cbd8d246154775a3de3f8205582993/demos";
 const overlayPath = process.env.DEMO_OVERLAY_PATH ||
     path.join(__dirname, "demo-overlay.js");
 
@@ -33,6 +33,80 @@ async function registerAndStart(page) {
     await moveAndClick(page, page.locator(".start-button"));
 }
 
+async function eatFood(page) {
+    await page.locator(".board-wrap").focus();
+    await page.evaluate(() => {
+        const boardSize = 25;
+        const directions = [
+            { key: "ArrowUp", dx: 0, dy: -1 },
+            { key: "ArrowRight", dx: 1, dy: 0 },
+            { key: "ArrowDown", dx: 0, dy: 1 },
+            { key: "ArrowLeft", dx: -1, dy: 0 }
+        ];
+        const coordinate = element => ({
+            x: Math.round(Number.parseFloat(element.style.left) / 4),
+            y: Math.round(Number.parseFloat(element.style.top) / 4)
+        });
+
+        const pilot = window.setInterval(() => {
+            const head = document.querySelector(".snake-head");
+            const food = document.querySelector(".food");
+            const length = document.querySelectorAll(".snake-segment").length;
+            if (!head || !food || length > 3) {
+                window.clearInterval(pilot);
+                return;
+            }
+
+            const start = coordinate(head);
+            const target = coordinate(food);
+            const occupied = new Set(
+                [...document.querySelectorAll(".snake-segment")]
+                    .slice(1)
+                    .map(element => {
+                        const point = coordinate(element);
+                        return `${point.x},${point.y}`;
+                    }));
+            const startKey = `${start.x},${start.y}`;
+            const queue = [{ point: start, firstKey: null }];
+            const visited = new Set([startKey]);
+            let firstKey = null;
+
+            for (let index = 0; index < queue.length; index += 1) {
+                const current = queue[index];
+                if (current.point.x === target.x && current.point.y === target.y) {
+                    firstKey = current.firstKey;
+                    break;
+                }
+
+                for (const direction of directions) {
+                    const point = {
+                        x: (current.point.x + direction.dx + boardSize) % boardSize,
+                        y: (current.point.y + direction.dy + boardSize) % boardSize
+                    };
+                    const pointKey = `${point.x},${point.y}`;
+                    if (visited.has(pointKey) ||
+                        (occupied.has(pointKey) && pointKey !== `${target.x},${target.y}`)) {
+                        continue;
+                    }
+
+                    visited.add(pointKey);
+                    queue.push({ point, firstKey: current.firstKey ?? direction.key });
+                }
+            }
+
+            if (firstKey) {
+                document.querySelector(".board-wrap").dispatchEvent(
+                    new KeyboardEvent("keydown", { key: firstKey, bubbles: true }));
+            }
+        }, 35);
+    });
+    await page.waitForFunction(
+        () => document.querySelectorAll(".snake-segment").length === 4,
+        null,
+        { timeout: 20000 });
+    await page.waitForTimeout(800);
+}
+
 async function captureScreenshot(browser) {
     const context = await browser.newContext({
         viewport: { width: 1280, height: 900 }
@@ -40,10 +114,11 @@ async function captureScreenshot(browser) {
     const page = await context.newPage();
     await page.goto(baseUrl, { waitUntil: "networkidle" });
     await registerAndStart(page);
+    await eatFood(page);
     await page.locator(".console-card").scrollIntoViewIfNeeded();
     await page.waitForTimeout(500);
     await page.screenshot({
-        path: path.join(screenshotDirectory, "snake-25x25-running.png")
+        path: path.join(screenshotDirectory, "snake-ate-food.png")
     });
     await context.close();
 }
@@ -72,17 +147,16 @@ async function captureDemo(browser) {
     await page.goto(baseUrl, { waitUntil: "networkidle" });
     await registerAndStart(page);
     await page.locator(".console-card").scrollIntoViewIfNeeded();
-    await page.evaluate(text => window.dghsfCaption(text), "Steer the snake around the board");
-    await moveAndClick(page, page.getByRole("button", { name: "Move down" }));
-    await moveAndClick(page, page.getByRole("button", { name: "Move left" }));
-    await page.evaluate(text => window.dghsfCaption(text), "Edge crossings wrap to the opposite side");
-    await page.waitForTimeout(1700);
+    await page.evaluate(text => window.dghsfCaption(text), "Guide the snake to the blue food");
+    await eatFood(page);
+    await page.evaluate(text => window.dghsfCaption(text), "The food disappears and the snake grows");
+    await page.waitForTimeout(1300);
 
     const recordedPath = await page.video().path();
     await context.close();
     await fs.copyFile(
         recordedPath,
-        path.join(demoDirectory, "snake-movement-demo.webm"));
+        path.join(demoDirectory, "snake-food-growth-demo.webm"));
 }
 
 async function main() {

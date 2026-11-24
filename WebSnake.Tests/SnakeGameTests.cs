@@ -57,6 +57,24 @@ public sealed class SnakeGameTests
         Assert.Equal(1, Math.Abs(head.X - previousHead.X) + Math.Abs(head.Y - previousHead.Y));
     }
 
+    [Fact]
+    public void Tick_WhenSnakeTouchesFood_GrowsAndRespawnsFoodAwayFromSnake()
+    {
+        var game = new SnakeGame(new ScriptedRandom(0, 310, 0));
+        Assert.True(game.TryRegisterPlayer("Neon Viper", out _));
+        Assert.True(game.TryStart());
+        var food = game.Food;
+        var previousLength = game.Length;
+
+        game.Tick();
+
+        Assert.Equal(previousLength + 1, game.Length);
+        Assert.Equal(food, game.Snake[0]);
+        Assert.Equal(10, game.Score);
+        Assert.NotEqual(food, game.Food);
+        Assert.DoesNotContain(game.Food, game.Snake);
+    }
+
     [Theory]
     [InlineData(Direction.Right, 13, 0, 12)]
     [InlineData(Direction.Down, 13, 12, 0)]
@@ -120,5 +138,17 @@ public sealed class SnakeGameTests
         Assert.True(game.TryRegisterPlayer("Neon Viper", out _));
         Assert.True(game.TryStart());
         return game;
+    }
+
+    private sealed class ScriptedRandom(params int[] values) : Random
+    {
+        private readonly Queue<int> _values = new(values);
+
+        public override int Next(int maxValue)
+        {
+            var value = _values.Dequeue();
+            Assert.InRange(value, 0, maxValue - 1);
+            return value;
+        }
     }
 }

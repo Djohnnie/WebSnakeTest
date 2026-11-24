@@ -11,6 +11,8 @@ public sealed class HomePageTests : BunitContext
         var page = Render<Home>();
 
         Assert.Equal("25 × 25", page.Find(".score-block.align-right strong").TextContent);
+        Assert.Equal("03", page.Find(".score-block.align-center strong").TextContent);
+        Assert.NotNull(page.Find(".food[role='img'][aria-label]"));
     }
 
     [Fact]

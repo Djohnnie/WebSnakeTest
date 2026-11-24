@@ -360,6 +360,10 @@ input:disabled {
     align-items: flex-end;
 }
 
+.align-center {
+    align-items: center;
+}
+
 .board-wrap {
     position: relative;
     border-radius: 12px;
@@ -424,6 +428,13 @@ input:disabled {
     border-radius: 50%;
     background: #428eff;
     box-shadow: 0 0 19px rgba(66, 142, 255, 0.85);
+    animation: food-glow 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes food-glow {
+    to {
+        box-shadow: 0 0 26px rgba(66, 142, 255, 1);
+    }
 }
 
 .board-sheen {
