@@ -72,7 +72,10 @@
             </div>
         </section>
 
-        <section class="console-card" aria-label="Snake game">
+        <section class="console-card"
+                 aria-label="Snake game"
+                 data-game-state="@(_game.IsRunning ? "running" : _game.IsGameOver ? "over" : "ready")"
+                 data-game-end-reason="@_game.EndReason?.ToString()">
             <div class="console-top">
                 <div class="live-state">
                     <span class="@(_game.IsRunning ? "pulse live" : "pulse")"></span>
@@ -112,8 +115,16 @@
                         <div class="overlay-icon">@(_game.IsGameOver ? "↻" : "▶")</div>
                         @if (_game.IsGameOver)
                         {
-                            <h2>Run complete</h2>
-                            <p>@_game.ActivePlayerName scored <strong>@_game.Score</strong> points.</p>
+                            if (_game.EndReason == GameEndReason.SelfCollision)
+                            {
+                                <h2>Snake down</h2>
+                                <p>@_game.ActivePlayerName hit the snake's own trail and scored <strong>@_game.Score</strong> points.</p>
+                            }
+                            else
+                            {
+                                <h2>Grid cleared</h2>
+                                <p>@_game.ActivePlayerName filled the board with <strong>@_game.Score</strong> points.</p>
+                            }
                         }
                         else if (_game.RegisteredPlayerName is not null)
                         {
@@ -171,9 +182,12 @@
     private string? _registrationError;
     private string? _startError;
 
-    private string BoardLabel => _game.IsRunning
-        ? $"Game in progress for {_game.ActivePlayerName}, score {_game.Score}, snake length {_game.Length}"
-        : "Snake game board";
+    private string BoardLabel =>
+        _game.IsRunning
+            ? $"Game in progress for {_game.ActivePlayerName}, score {_game.Score}, snake length {_game.Length}"
+            : _game.IsGameOver
+                ? $"Game over for {_game.ActivePlayerName}, score {_game.Score}, snake length {_game.Length}"
+                : "Snake game board";
 
     private string FoodLabel =>
         $"Blue food at column {_game.Food.X + 1}, row {_game.Food.Y + 1}";

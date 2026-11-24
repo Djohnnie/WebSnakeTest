@@ -23,6 +23,7 @@ public sealed class SnakeGame
     public int Score { get; private set; }
     public bool IsRunning { get; private set; }
     public bool IsGameOver { get; private set; }
+    public GameEndReason? EndReason { get; private set; }
     public Direction Direction { get; private set; } = Direction.Right;
 
     public bool TryRegisterPlayer(string? requestedName, out string error)
@@ -71,6 +72,7 @@ public sealed class SnakeGame
         ActivePlayerName = RegisteredPlayerName;
         Score = 0;
         IsGameOver = false;
+        EndReason = null;
         IsRunning = true;
         ResetBoard();
         return true;
@@ -110,7 +112,7 @@ public sealed class SnakeGame
 
         if (collisionBody.Contains(nextHead))
         {
-            EndGame();
+            EndGame(GameEndReason.SelfCollision);
             return true;
         }
 
@@ -158,17 +160,18 @@ public sealed class SnakeGame
 
         if (available.Count == 0)
         {
-            EndGame();
+            EndGame(GameEndReason.BoardCleared);
             return;
         }
 
         Food = available[_random.Next(available.Count)];
     }
 
-    private void EndGame()
+    private void EndGame(GameEndReason reason)
     {
         IsRunning = false;
         IsGameOver = true;
+        EndReason = reason;
     }
 
     private static bool IsOpposite(Direction next, Direction current) =>

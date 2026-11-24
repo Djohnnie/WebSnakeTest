@@ -4,9 +4,9 @@ const { chromium } = require("playwright");
 
 const baseUrl = process.env.BASE_URL || "http://127.0.0.1:5067";
 const screenshotDirectory = process.env.SCREENSHOT_DIR ||
-    "/tmp/dghsf-agent-worker/27cbd8d246154775a3de3f8205582993/screenshots";
+    "/tmp/websnake-screenshots";
 const demoDirectory = process.env.DEMO_DIR ||
-    "/tmp/dghsf-agent-worker/27cbd8d246154775a3de3f8205582993/demos";
+    "/tmp/websnake-demos";
 const overlayPath = process.env.DEMO_OVERLAY_PATH ||
     path.join(__dirname, "demo-overlay.js");
 
@@ -33,9 +33,9 @@ async function registerAndStart(page) {
     await moveAndClick(page, page.locator(".start-button"));
 }
 
-async function eatFood(page) {
+async function growSnake(page, targetLength) {
     await page.locator(".board-wrap").focus();
-    await page.evaluate(() => {
+    await page.evaluate(targetLength => {
         const boardSize = 25;
         const directions = [
             { key: "ArrowUp", dx: 0, dy: -1 },
@@ -52,7 +52,7 @@ async function eatFood(page) {
             const head = document.querySelector(".snake-head");
             const food = document.querySelector(".food");
             const length = document.querySelectorAll(".snake-segment").length;
-            if (!head || !food || length > 3) {
+            if (!head || !food || length >= targetLength) {
                 window.clearInterval(pilot);
                 return;
             }
@@ -99,12 +99,77 @@ async function eatFood(page) {
                     new KeyboardEvent("keydown", { key: firstKey, bubbles: true }));
             }
         }, 35);
-    });
+    }, targetLength);
     await page.waitForFunction(
-        () => document.querySelectorAll(".snake-segment").length === 4,
-        null,
+        length => document.querySelectorAll(".snake-segment").length >= length,
+        targetLength,
         { timeout: 20000 });
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(150);
+}
+
+async function collideWithSelf(page) {
+    await page.evaluate(() => {
+        const coordinate = element => ({
+            x: Math.round(Number.parseFloat(element.style.left) / 4),
+            y: Math.round(Number.parseFloat(element.style.top) / 4)
+        });
+        const segments = [...document.querySelectorAll(".snake-segment")];
+        const [head, neck] = segments.map(coordinate);
+        const normalize = value => (value + 25) % 25;
+        const dx = normalize(head.x - neck.x);
+        const dy = normalize(head.y - neck.y);
+        const direction =
+            dx === 1 ? "Right" :
+            dx === 24 ? "Left" :
+            dy === 1 ? "Down" : "Up";
+        const clockwise = {
+            Up: "Right",
+            Right: "Down",
+            Down: "Left",
+            Left: "Up"
+        };
+        const opposite = {
+            Up: "Down",
+            Right: "Left",
+            Down: "Up",
+            Left: "Right"
+        };
+        const counterClockwise = {
+            Up: "Left",
+            Right: "Up",
+            Down: "Right",
+            Left: "Down"
+        };
+
+        window.selfCollisionTurns = [
+            clockwise[direction],
+            opposite[direction],
+            counterClockwise[direction]
+        ];
+    });
+
+    const turns = await page.evaluate(() => window.selfCollisionTurns);
+    await page.locator(".board-wrap").focus();
+    for (const turn of turns.slice(0, 2)) {
+        const before = await page.locator(".snake-head").evaluate(
+            element => [element.style.left, element.style.top]);
+        await page.keyboard.press(`Arrow${turn}`);
+        await page.waitForFunction(
+            previousPosition => {
+                const head = document.querySelector(".snake-head");
+                return head &&
+                    (head.style.left !== previousPosition[0] ||
+                     head.style.top !== previousPosition[1]);
+            },
+            before);
+    }
+
+    await page.keyboard.press(`Arrow${turns[2]}`);
+    await page.waitForFunction(
+        () => document.querySelector(".console-card")?.dataset.gameState === "over",
+        null,
+        { timeout: 2000 });
+    await page.waitForTimeout(700);
 }
 
 async function captureScreenshot(browser) {
@@ -114,11 +179,12 @@ async function captureScreenshot(browser) {
     const page = await context.newPage();
     await page.goto(baseUrl, { waitUntil: "networkidle" });
     await registerAndStart(page);
-    await eatFood(page);
+    await growSnake(page, 5);
+    await collideWithSelf(page);
     await page.locator(".console-card").scrollIntoViewIfNeeded();
     await page.waitForTimeout(500);
     await page.screenshot({
-        path: path.join(screenshotDirectory, "snake-ate-food.png")
+        path: path.join(screenshotDirectory, "snake-self-collision.png")
     });
     await context.close();
 }
@@ -147,16 +213,18 @@ async function captureDemo(browser) {
     await page.goto(baseUrl, { waitUntil: "networkidle" });
     await registerAndStart(page);
     await page.locator(".console-card").scrollIntoViewIfNeeded();
-    await page.evaluate(text => window.dghsfCaption(text), "Guide the snake to the blue food");
-    await eatFood(page);
-    await page.evaluate(text => window.dghsfCaption(text), "The food disappears and the snake grows");
+    await page.evaluate(text => window.dghsfCaption(text), "Grow the snake by chasing blue food");
+    await growSnake(page, 5);
+    await page.evaluate(text => window.dghsfCaption(text), "Turn across the snake's own trail");
+    await collideWithSelf(page);
+    await page.evaluate(text => window.dghsfCaption(text), "Self-collision ends the run");
     await page.waitForTimeout(1300);
 
     const recordedPath = await page.video().path();
     await context.close();
     await fs.copyFile(
         recordedPath,
-        path.join(demoDirectory, "snake-food-growth-demo.webm"));
+        path.join(demoDirectory, "snake-self-collision-demo.webm"));
 }
 
 async function main() {
