@@ -25,7 +25,7 @@
 }
 
 .brand > span:last-child > span {
-    color: #ff3b9d;
+    color: #ff6a00;
 }
 
 .brand-mark {
@@ -42,7 +42,7 @@
 
 .brand-mark span {
     border-radius: 2px;
-    background: #ff3b9d;
+    background: #ff6a00;
 }
 
 .brand-mark span:nth-child(3) {
@@ -92,7 +92,7 @@
 
 .eyebrow {
     margin-bottom: 12px;
-    color: #ff4ba8;
+    color: #ff7a1a;
     font-size: 0.72rem;
     font-weight: 800;
     letter-spacing: 0.17em;
@@ -109,7 +109,7 @@ h1 {
 }
 
 h1 span {
-    color: #ff3b9d;
+    color: #ff6a00;
 }
 
 .intro {
@@ -142,7 +142,7 @@ h1 span {
     place-items: center;
     border: 1px solid #6c2850;
     border-radius: 11px;
-    color: #ff4ba8;
+    color: #ff7a1a;
     background: #261521;
     font-size: 0.75rem;
     font-weight: 900;
@@ -190,8 +190,8 @@ input::placeholder {
 }
 
 input:focus {
-    border-color: #ff3b9d;
-    box-shadow: 0 0 0 3px rgba(255, 59, 157, 0.12);
+    border-color: #ff6a00;
+    box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.12);
     outline: none;
 }
 
@@ -203,7 +203,7 @@ input.invalid {
     padding: 0 18px;
     border: 1px solid #783257;
     border-radius: 9px;
-    color: #ff73bb;
+    color: #ff9547;
     background: #28131f;
     font-size: 0.75rem;
     font-weight: 800;
@@ -212,7 +212,7 @@ input.invalid {
 }
 
 .register-button:hover {
-    border-color: #ff3b9d;
+    border-color: #ff6a00;
     background: #39182a;
 }
 
@@ -352,7 +352,7 @@ input:disabled {
 }
 
 .leaderboard-list .leader {
-    background: linear-gradient(90deg, rgba(255, 59, 157, 0.09), transparent);
+    background: linear-gradient(90deg, rgba(255, 106, 0, 0.09), transparent);
 }
 
 .rank {
@@ -363,7 +363,7 @@ input:disabled {
 }
 
 .leader .rank {
-    color: #ff4da7;
+    color: #ff7a1a;
 }
 
 .leaderboard-player {
@@ -408,7 +408,7 @@ input:disabled {
     border: 1px solid #3a313e;
     border-radius: 21px;
     background: linear-gradient(150deg, #1d1921, #0f0d12 70%);
-    box-shadow: 0 35px 80px rgba(0, 0, 0, 0.45), 0 0 55px rgba(255, 59, 157, 0.045);
+    box-shadow: 0 35px 80px rgba(0, 0, 0, 0.45), 0 0 55px rgba(255, 106, 0, 0.045);
 }
 
 .console-card::after {
@@ -416,7 +416,7 @@ input:disabled {
     inset: -1px;
     z-index: -1;
     border-radius: 21px;
-    background: linear-gradient(135deg, rgba(255, 59, 157, 0.28), transparent 38%);
+    background: linear-gradient(135deg, rgba(255, 106, 0, 0.28), transparent 38%);
     content: "";
 }
 
@@ -461,7 +461,7 @@ input:disabled {
 .player-chip strong {
     max-width: 180px;
     overflow: hidden;
-    color: #f2b9d7;
+    color: #ffd2ad;
     font-size: 0.77rem;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -512,7 +512,7 @@ input:disabled {
 .board::before {
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at 50% 45%, rgba(255, 59, 157, 0.035), transparent 65%);
+    background: radial-gradient(circle at 50% 45%, rgba(255, 106, 0, 0.035), transparent 65%);
     content: "";
 }
 
@@ -594,10 +594,10 @@ input:disabled {
     place-items: center;
     border: 1px solid #6c2b50;
     border-radius: 50%;
-    color: #ff51a9;
+    color: #ff7a1a;
     background: #28131f;
     font-size: 1rem;
-    box-shadow: 0 0 30px rgba(255, 59, 157, 0.12);
+    box-shadow: 0 0 30px rgba(255, 106, 0, 0.12);
 }
 
 .board-overlay h2 {
@@ -613,7 +613,7 @@ input:disabled {
 }
 
 .board-overlay strong {
-    color: #ff4da7;
+    color: #ff7a1a;
 }
 
 .start-error {
@@ -636,14 +636,14 @@ input:disabled {
     border-radius: 9px;
     color: #fff;
     background: #ec318d;
-    box-shadow: 0 8px 25px rgba(236, 49, 141, 0.23);
+    box-shadow: 0 8px 25px rgba(255, 106, 0, 0.23);
     font-size: 0.75rem;
     font-weight: 900;
     letter-spacing: 0.11em;
 }
 
 .start-button:hover:not(:disabled) {
-    background: #ff47a3;
+    background: #ff7a1a;
     transform: translateY(-1px);
 }
 
@@ -669,7 +669,7 @@ input:disabled {
 
 .direction-pad button:hover {
     border-color: #6b4160;
-    color: #ff5eae;
+    color: #ff7a1a;
 }
 
 footer {
