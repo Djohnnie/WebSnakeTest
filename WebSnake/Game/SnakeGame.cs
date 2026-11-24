@@ -4,11 +4,13 @@ public sealed class SnakeGame
 {
     private static readonly char[] AllowedSeparators = [' ', '-', '\'', '_'];
     private readonly List<GridPoint> _snake = [];
+    private readonly Leaderboard _leaderboard;
     private readonly Random _random;
 
-    public SnakeGame(Random? random = null)
+    public SnakeGame(Random? random = null, Leaderboard? leaderboard = null)
     {
         _random = random ?? Random.Shared;
+        _leaderboard = leaderboard ?? new Leaderboard();
         ResetBoard();
     }
 
@@ -25,6 +27,7 @@ public sealed class SnakeGame
     public bool IsGameOver { get; private set; }
     public GameEndReason? EndReason { get; private set; }
     public Direction Direction { get; private set; } = Direction.Right;
+    public IReadOnlyList<LeaderboardEntry> LeaderboardEntries => _leaderboard.Entries;
 
     public bool TryRegisterPlayer(string? requestedName, out string error)
     {
@@ -172,6 +175,7 @@ public sealed class SnakeGame
         IsRunning = false;
         IsGameOver = true;
         EndReason = reason;
+        _leaderboard.Add(ActivePlayerName!, Length);
     }
 
     private static bool IsOpposite(Direction next, Direction current) =>
